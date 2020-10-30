@@ -1,0 +1,14 @@
+SOURCES = main.s
+PROGRAM = app.prg
+
+CC    = cl65
+FLAGS = -t c64 -u __EXEHDR__ -C c64-asm.cfg
+
+.PHONY: all clean assets
+all: assets $(PROGRAM)
+
+$(PROGRAM): $(SOURCES)
+	$(CC) $(FLAGS) -o $@ $(SOURCES)
+
+clean:
+	$(RM) $(PROGRAM) $(PROGRAM).map $(PROGRAM).lbl
