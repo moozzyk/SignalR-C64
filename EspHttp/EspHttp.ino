@@ -2,10 +2,12 @@
 #include <ESP8266HTTPClient.h>
 #include <ESP8266WiFi.h>
 
-#define ACCEPT_COMMAND 1
-#define EXECUTE_COMMAND 2
+#define BAUD_RATE 1200
 
-int mode = ACCEPT_COMMAND;
+#define MODE_ACCEPT_COMMAND 1
+#define MODE_EXECUTE_COMMAND 2
+
+int mode = MODE_ACCEPT_COMMAND;
 
 #define COMMAND_SET_SSID "SSID$"
 #define COMMAND_SET_PASS "PASS$"
@@ -44,8 +46,6 @@ String WiFiStatusToString(int status) {
         return "WL_CONNECT_FAILED";
       case WL_CONNECTION_LOST:
         return "WL_CONNECTION_LOST";
-//      case WL_WRONG_PASSWORD:
-//        return "WL_WRONG_PASSWORD";
       case WL_DISCONNECTED:
         return "WL_DISCONNECTED";
       default:
@@ -107,7 +107,7 @@ void httpPost(const String& url) {
 }
 
 void executeCommand() {
-  mode = EXECUTE_COMMAND;
+  mode = MODE_EXECUTE_COMMAND;
   command.trim();
   String upperCaseCommand = command;
   upperCaseCommand.toUpperCase();
@@ -128,18 +128,17 @@ void executeCommand() {
   }
 
   command = "";
-  mode = ACCEPT_COMMAND;
+  mode = MODE_ACCEPT_COMMAND;
 }
 
 void setup() {
-  Serial.begin(2400);
-  Serial.println();
-  Serial.println("TEST");
-  mode = ACCEPT_COMMAND;
+  Serial.begin(BAUD_RATE);
+  reportSuccess();
+  mode = MODE_ACCEPT_COMMAND;
 }
 
 void loop() {
-  if (mode != ACCEPT_COMMAND || Serial.available() == 0) {
+  if (mode != MODE_ACCEPT_COMMAND || Serial.available() == 0) {
     return;
   }
 
