@@ -1,4 +1,26 @@
-.import open_rs232, close_rs232, send_rs232, get_rs232
+
+            sei
+            lda #<irq
+            sta $314
+            lda #>irq
+            sta $315
+            lda #$01
+            sta $d01a
+            lda #$7f
+            sta $dc0d
+            lda #$44
+            sta $d012
+            lda #$1b
+            sta $d011
+            cli
+            rts
+irq:
+            inc $d021
+            jsr $ffba
+            dec $d021
+            lda #$01
+            sta $d019
+            jmp $ea31
 
 file_id = $02
 
