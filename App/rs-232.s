@@ -1,52 +1,34 @@
-.export open_rs232, close_rs232, get_rs232, send_rs232
+.export serial_open, serial_read
 
-bauds:  .byte 8         ; 1200 bauds
+file_id     = $02 ; file #
+device_id   = $02 ; rs-232
 
-; A - file id, not preserved
-open_rs232:
-        pha             ; keep file id for later use
-        ldx #$02        ; device (2 - rs-232)
-        ldy #$00        ; secondary number
-        jsr $ffba       ; SETLFS
+serial_open:
+            lda #file_id
+            ldx #device_id
+            ldy #$00        ; secondary number
+            jsr $ffba       ; SETLFS
+            lda #$01        ; file name size
+            ldx #<bauds     ; file name vector lo
+            ldy #>bauds     ; file name vector high
+            jsr $ffbd       ; SETNAM
+            lda #file_id    ; TODO: needed?
+            jsr $ffc0       ; OPEN
 
-        lda #$01        ; size
-        ldx #<bauds
-        ldy #>bauds
-        jsr $fdf9       ; SETNAM
+            ldx #file_id    ; TODO: needed?
+            jsr $ffc9       ; CHKOUT
 
-        pla             ; file id
-        jsr $ffc0       ; OPEN
-        rts
+            ldx #file_id    ; TODO: needed?
+            jsr $ffc6       ; CHKIN
+            rts
 
-; A - file id, not preserved
-close_rs232:
-        jsr $fdf9
-        rts
+bauds:      .byte 8             ; 1200 bauds
 
-; A - file id, not preserved
-send_rs232:
-        pha
-        ldx #$02
-        jsr $ffc9       ; CHKOUT
-        pla
-        jsr $ffd2
-        jsr $ffcc       ; CLRCHN
-        rts
-
-get_rs232:
-        ldx #$02
-        jsr $ffc6       ; CHKIN
-        jsr $ffcf       ; CHRIN
-        jsr $ffe4       ; GETIN
-        tax
-        jsr $ffcc       ; CLRCHN
-        txa
-        rts
-
-; cmd .text "WIFION"
-
-; CHCKOUT - prepares a logical device for output
-; PRINT
-; CLRCHN - resets input/output to default devices (keyboard/screen)
-; $f7/$f8 points to the input buffer
-; $f9/$fa points to the output buffer
+serial_read:
+            ldx #0
+            ldy $29c        ; ridbs
+            cpy $29b        ; ridbe
+            beq empty
+            ldx #1
+            jsr $ffe4
+empty:      rts
