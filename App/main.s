@@ -1,4 +1,4 @@
-.import serial_open, serial_read
+.import client_init, client_run
 
             sei
             lda #<irq
@@ -14,21 +14,11 @@
             lda #$1b
             sta $d011
             cli
-            jsr serial_open
-            lda #'?'
-            jsr $ffd2
-            lda #$0a
-            jsr $ffd2
+            jsr client_init
             jmp *
 irq:
             inc $d021
-            jsr serial_read
-            cpx #$0
-            beq continue
-            ldy index
-            sta $400,y
-            inc index
-continue:
+            jsr client_run
             dec $d021
             lda #$01
             sta $d019
