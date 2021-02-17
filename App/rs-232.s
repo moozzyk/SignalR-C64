@@ -1,6 +1,6 @@
 .export serial_open, serial_read
 
-file_id     = $02 ; file #
+file_id     = $05 ; file #
 device_id   = $02 ; rs-232
 
 serial_open:
@@ -12,7 +12,6 @@ serial_open:
             ldx #<bauds     ; file name vector lo
             ldy #>bauds     ; file name vector high
             jsr $ffbd       ; SETNAM
-            lda #file_id    ; TODO: needed?
             jsr $ffc0       ; OPEN
 
             ldx #file_id    ; TODO: needed?
@@ -22,7 +21,7 @@ serial_open:
             jsr $ffc6       ; CHKIN
             rts
 
-bauds:      .byte 8             ; 1200 bauds
+bauds:      .byte 8         ; 1200 bauds
 
 serial_read:
             ldx #0
