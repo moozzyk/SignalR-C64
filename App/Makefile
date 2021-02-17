@@ -1,4 +1,4 @@
-SOURCES = main.s rs-232.s signalr-client.s
+SOURCES = main.s rs-232.s signalr-client.s esp-client.s
 PROGRAM = app.prg
 
 CC    = cl65

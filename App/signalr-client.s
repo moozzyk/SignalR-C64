@@ -1,34 +1,11 @@
-.export client_init, client_run
+.export signalr_init, signalr_run
+.import esp_client_init, esp_client_poll, esp_client_start_wifi
 
-.import serial_open, serial_read
-
-client_init:
-            jsr serial_open
-            jsr send_command
+signalr_init:
+            jsr esp_client_init
+            jsr esp_client_start_wifi
             rts
 
-client_run:
-            jsr serial_read
-            cpx #$00
-            beq :+
-            jsr handle_incoming
-:           rts
-
-handle_incoming:
-            ldy index
-            sbc #$40
-            sta $400,y
-            inc index
+signalr_run:
+            jsr esp_client_poll
             rts
-index:      .byte 0
-
-send_command:
-            ldx #$00
-:           lda start_wifi, x
-            inx
-            jsr $ffd2
-            cmp #$0a
-            bne :-
-            rts
-
-start_wifi: .byte "wifion", $0a

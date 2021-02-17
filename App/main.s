@@ -1,4 +1,4 @@
-.import client_init, client_run
+.import signalr_init, signalr_run
 
             sei
             lda #<irq
@@ -14,11 +14,11 @@
             lda #$1b
             sta $d011
             cli
-            jsr client_init
+            jsr signalr_init
             jmp *
 irq:
             inc $d021
-            jsr client_run
+            jsr signalr_run
             dec $d021
             lda #$01
             sta $d019
