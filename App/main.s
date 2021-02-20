@@ -1,5 +1,6 @@
 .import signalr_init, signalr_run
 
+main:
             sei
             lda #<irq
             sta $314
