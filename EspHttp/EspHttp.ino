@@ -1,6 +1,7 @@
 #include <EEPROM.h>
 #include <ESP8266HTTPClient.h>
 #include <ESP8266WiFi.h>
+#include <WebSocketsClient.h>
 
 #define BAUD_RATE 1200
 
@@ -16,16 +17,19 @@
 #define COMMAND_SET_BODY "BODY$"
 #define COMMAND_ECHO_ON "ECHOON"
 #define COMMAND_ECHO_OFF "ECHOOFF"
+#define COMMAND_WS_START "WSSTART$"
 
 
 String command = "";
 String payload = "";
 
-String ssid = "";
+String ssid = "";  
 String pass = "";
 
 int mode = MODE_ACCEPT_COMMAND;
 bool echo = false;
+
+WebSocketsClient webSocket;
 
 void reportError(const String& errorMessage) {
   Serial.println("ERROR");
@@ -79,6 +83,63 @@ void wifiDisconnect() {
   reportSuccess();
 }
 
+void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
+  switch(type) {
+    case WStype_DISCONNECTED:
+      Serial.println("[WSc] Disconnected");
+      break;
+    case WStype_CONNECTED:
+      Serial.println("[WSc] Connected to url:");
+      Serial.println((char *)payload);
+      break;
+    case WStype_TEXT:
+      Serial.println("[WSc] get text:");
+      Serial.println((char*)payload);
+      break;
+    case WStype_BIN:
+      Serial.println("[WSc] get binary length");
+      break;
+    case WStype_PING:
+      Serial.println("[WSc] get ping");
+      break;
+    case WStype_PONG:
+      Serial.println("[WSc] get pong");
+      break;
+  }
+}
+
+void wsStart(const String& url) {
+  if (webSocket.isConnected()) {
+    reportSuccess();
+    return;
+  }
+  
+  int hostIndex = 0;
+  bool isSecureWs = false;
+  if (url.startsWith("wss://")) {
+    reportError("Secure WebSocket not supported");
+    return;
+  }
+  if (url.startsWith("ws://")) {
+    hostIndex = 5;
+  }
+  int portIndex = url.indexOf(':', hostIndex);
+  int pathIndex = url.indexOf('/', portIndex);
+
+  if (portIndex == -1 || pathIndex == -1) {
+    reportError("Malformed URL");
+    return;
+  }
+
+  String host, port, path;
+  host = url.substring(hostIndex, portIndex);
+  port = url.substring(portIndex+1, pathIndex);
+  path = url.substring(pathIndex);
+  
+  webSocket.onEvent(webSocketEvent);
+  webSocket.begin(host, port.toInt(), path);
+}
+
 void sendHttpRequest(const char* method, const String& url, const String& payload) {
   HTTPClient httpClient;
   httpClient.begin(url);
@@ -89,7 +150,6 @@ void sendHttpRequest(const char* method, const String& url, const String& payloa
     reportSuccess();
     Serial.print(statusCode);
     Serial.print(" ");
-    // Serial.println(httpClient.getSize());
     const String& body = httpClient.getString();
     Serial.println(body.length());
     yield();
@@ -136,6 +196,8 @@ void executeCommand() {
   } else if (upperCaseCommand == COMMAND_ECHO_OFF) {
     echo = false;
     reportSuccess();
+  } else if (upperCaseCommand.startsWith(COMMAND_WS_START)) {
+    wsStart(command.substring(strlen(COMMAND_WS_START)));
   } else {
     reportError("Invalid command");
   }
@@ -146,11 +208,12 @@ void executeCommand() {
 
 void setup() {
   Serial.begin(BAUD_RATE);
-  reportSuccess();
   mode = MODE_ACCEPT_COMMAND;
 }
 
 void loop() {
+  webSocket.loop();
+  
   if (mode != MODE_ACCEPT_COMMAND || Serial.available() == 0) {
     return;
   }
@@ -162,7 +225,7 @@ void loop() {
 
   if (c == '\n' || c == '\r') {
     if (echo) {
-    Serial.println();
+      Serial.println();
     }
     executeCommand();
   } else {
