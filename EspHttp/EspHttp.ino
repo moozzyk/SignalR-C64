@@ -18,12 +18,13 @@
 #define COMMAND_ECHO_ON "ECHOON"
 #define COMMAND_ECHO_OFF "ECHOOFF"
 #define COMMAND_WS_START "WSSTART$"
+#define COMMAND_WS_SEND "WSSEND$"
 
 
 String command = "";
 String payload = "";
 
-String ssid = "";  
+String ssid = "";
 String pass = "";
 
 int mode = MODE_ACCEPT_COMMAND;
@@ -38,6 +39,16 @@ void reportError(const String& errorMessage) {
 
 void reportSuccess() {
   Serial.println("OK");
+}
+
+void reportData(const String& data) {
+  Serial.println("DATA " + String(data.length()));
+  Serial.println(data);
+}
+
+void reportWebSocketStatus(const String& status) {
+  Serial.println("WS");
+  Serial.println(status);
 }
 
 String WiFiStatusToString(int status) {
@@ -86,24 +97,15 @@ void wifiDisconnect() {
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   switch(type) {
     case WStype_DISCONNECTED:
-      Serial.println("[WSc] Disconnected");
+      reportWebSocketStatus("Disconnected");
       break;
     case WStype_CONNECTED:
-      Serial.println("[WSc] Connected to url:");
-      Serial.println((char *)payload);
+      reportWebSocketStatus("Connected");
       break;
     case WStype_TEXT:
-      Serial.println("[WSc] get text:");
-      Serial.println((char*)payload);
+      reportData(String((const char*)payload));
       break;
-    case WStype_BIN:
-      Serial.println("[WSc] get binary length");
-      break;
-    case WStype_PING:
-      Serial.println("[WSc] get ping");
-      break;
-    case WStype_PONG:
-      Serial.println("[WSc] get pong");
+    default:
       break;
   }
 }
@@ -113,7 +115,7 @@ void wsStart(const String& url) {
     reportSuccess();
     return;
   }
-  
+
   int hostIndex = 0;
   bool isSecureWs = false;
   if (url.startsWith("wss://")) {
@@ -135,9 +137,17 @@ void wsStart(const String& url) {
   host = url.substring(hostIndex, portIndex);
   port = url.substring(portIndex+1, pathIndex);
   path = url.substring(pathIndex);
-  
+
   webSocket.onEvent(webSocketEvent);
   webSocket.begin(host, port.toInt(), path);
+}
+
+void wsSend(const String& message) {
+  if (webSocket.sendTXT((message).c_str())) {
+    reportSuccess();
+  } else {
+    reportError("Send failed");
+  }
 }
 
 void sendHttpRequest(const char* method, const String& url, const String& payload) {
@@ -198,6 +208,8 @@ void executeCommand() {
     reportSuccess();
   } else if (upperCaseCommand.startsWith(COMMAND_WS_START)) {
     wsStart(command.substring(strlen(COMMAND_WS_START)));
+  } else if (upperCaseCommand.startsWith(COMMAND_WS_SEND)) {
+    wsSend(command.substring(strlen(COMMAND_WS_SEND)));
   } else {
     reportError("Invalid command");
   }
@@ -213,7 +225,7 @@ void setup() {
 
 void loop() {
   webSocket.loop();
-  
+
   if (mode != MODE_ACCEPT_COMMAND || Serial.available() == 0) {
     return;
   }
