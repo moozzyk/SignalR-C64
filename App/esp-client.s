@@ -27,6 +27,7 @@ send_command:
 
 ;-------------------------------------------------------------------------------
 
+; state
 READ_STATUS = 0
 READ_DATA = 1
 READ_ERROR = 2
@@ -34,10 +35,12 @@ READ_ERROR = 2
 RESULT_CONTINUE = 0
 RESULT_DATA = 1
 RESULT_ERROR = 2
+RESULT_OK = 3
 
 ; Y: 0 - continue
-;    1 - error in buffer
-;    2 - data in buffer
+;    1 - DATA, data in buffer
+;    2 - ERROR, description in buffer
+;    3 - OK, no additional details in buffer
 ; X: data length (if Y != 0)
 esp_client_poll:
             jsr serial_read
@@ -48,60 +51,60 @@ esp_client_poll:
 
 handle_incoming:
             ldx index
+            sta buffer,x
+            inc index
             ldy state
-            beq read_status_line
-            cpy #READ_ERROR
-            beq read_error_line
-            ; TODO: read_data
-exit_cont:
-            ldy #$00
+            cpy #READ_DATA
+            beq read_data
+            cmp #$0a
+            beq read_line
+            ldy #RESULT_CONTINUE
             rts
 
-read_status_line:
-            ldy #RESULT_CONTINUE
-            cmp #$0d
-            beq exit_cont   ; ignore `\r`
-            cmp #$0a
-            bne store_char
-            inc state       ; optimistically assume OK - READ_DATA
-            jsr status_OK
-            beq reset_index
-            inc state       ; READ_ERROR
-            jmp reset_index
+read_data:
+            ; TODO: read_data
+            rts
 
-read_error_line:
+read_line:
+            jsr reset_index
+            cpy #READ_STATUS
+            beq parse_status
+            ldy #READ_STATUS
+            sty state
+            ldy #RESULT_ERROR   ; line and not status - must be an error
+            rts
+
+parse_status:
+            lda buffer + 1      ; check the second letter due to a weird bug
+            cmp #$4B            ; 'K'
+            beq status_OK
+            cmp #$52            ; 'R'
+            beq status_error
+            ldy #READ_DATA      ; status does not start with 'O' or 'E' - assuming 'DATA'
+            sty state
+            ldy #RESULT_DATA
+            rts
+
+status_OK:
+            ldy #READ_STATUS
+            sty state
+            ldy #RESULT_OK
+            rts
+
+status_error:
+            ldy #READ_ERROR
+            sty state
             ldy #RESULT_CONTINUE
-            cmp #$0d
-            beq exit_cont
-            cmp #$0a
-            bne store_char
-            ldy #RESULT_ERROR
-            jmp reset_index
+            rts
 
 reset_index:
             lda #$00
             sta index
             rts
 
-store_char:
-            sta buffer, x
-            inc index
-            rts
-
-; A: 0 - if status in buffer 'OK'
-status_OK:
-            lda buffer + 1  ; 'K'
-            cmp #$4B
-            bne :+
-            lda buffer
-            cmp #$4F        ; 'O'
-            beq :+
-            lda buffer
-            cmp #$9F        ; 'O' - compensate for a bug where first byte comes corrupt for unknown reason
-:           rts
-
 index:      .byte 0
 state:      .byte READ_STATUS
+
 buffer:     .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -113,5 +116,5 @@ buffer:     .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 
 
 
-start_wifi: .byte "echo", $0a
-; start_wifi: .byte "wifion", $0a
+echo_off: .byte "echooff", $0a
+start_wifi: .byte "wifion", $0a
