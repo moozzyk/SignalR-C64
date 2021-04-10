@@ -3,6 +3,8 @@
 
 .import serial_open, serial_read
 
+.include "esp-client-const.inc"
+
 esp_client_init:
             lda #$00
             sta state
@@ -31,12 +33,6 @@ send_command:
 READ_STATUS = 0
 READ_DATA = 1
 READ_ERROR = 2
-
-RESULT_CONTINUE = 0
-RESULT_DATA = 1
-RESULT_ERROR = 2
-RESULT_OK = 3
-
 ; Y: 0 - continue
 ;    1 - DATA, data in buffer
 ;    2 - ERROR, description in buffer
@@ -113,8 +109,6 @@ buffer:     .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-
-
 
 echo_off: .byte "echooff", $0a
 start_wifi: .byte "wifion", $0a

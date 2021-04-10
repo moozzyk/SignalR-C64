@@ -1,6 +1,8 @@
 .export signalr_init, signalr_run
 .import esp_client_init, esp_client_poll, esp_client_start_wifi, buffer
 
+.include "esp-client-const.inc"
+
 signalr_init:
             jsr esp_client_init
             jsr esp_client_start_wifi
@@ -8,7 +10,7 @@ signalr_init:
 
 signalr_run:
             jsr esp_client_poll
-            cpy #$00            ; TODO: make result codes common
+            cpy #RESULT_CONTINUE
             beq exit
 
             ldy #$00
