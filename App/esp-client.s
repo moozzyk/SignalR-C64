@@ -1,5 +1,5 @@
 .export esp_client_init, esp_client_poll, esp_client_start_wifi
-.export buffer
+.export recv_buff
 
 .import serial_open, serial_read
 
@@ -16,16 +16,19 @@ esp_client_start_wifi:
             sta $fb
             lda #>start_wifi
             sta $fc
-            jmp send_command
+            jmp send
 
-send_command:
+send:
             ldy #$00
 :           lda ($fb),y
+            cmp #$00
+            beq send_exit
             iny
             jsr $ffd2
             cmp #$0a
             bne :-
-            rts
+send_exit:  rts
+
 
 ;-------------------------------------------------------------------------------
 
@@ -34,9 +37,9 @@ READ_STATUS = 0
 READ_DATA = 1
 READ_ERROR = 2
 ; Y: 0 - continue
-;    1 - DATA, data in buffer
-;    2 - ERROR, description in buffer
-;    3 - OK, no additional details in buffer
+;    1 - DATA, data in recv_buff
+;    2 - ERROR, description in recv_buff
+;    3 - OK, no additional details in recv_buff
 ; X: data length (if Y != 0)
 esp_client_poll:
             jsr serial_read
@@ -47,7 +50,7 @@ esp_client_poll:
 
 handle_incoming:
             ldx index
-            sta buffer,x
+            sta recv_buff,x
             inc index
             ldy state
             cpy #READ_DATA
@@ -71,7 +74,7 @@ read_line:
             rts
 
 parse_status:
-            lda buffer + 1      ; check the second letter due to a weird bug
+            lda recv_buff + 1   ; check the second letter due to a weird bug
             cmp #$4B            ; 'K'
             beq status_OK
             cmp #$52            ; 'R'
@@ -101,7 +104,7 @@ reset_index:
 index:      .byte 0
 state:      .byte READ_STATUS
 
-buffer:     .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+recv_buff:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -110,5 +113,6 @@ buffer:     .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
-echo_off: .byte "echooff", $0a
+echo_off:   .byte "echooff", $0a
 start_wifi: .byte "wifion", $0a
+start_ws:   .byte "wsstart$", $00
