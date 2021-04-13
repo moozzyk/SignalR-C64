@@ -1,4 +1,4 @@
-.export esp_client_init, esp_client_poll, esp_client_start_wifi
+.export esp_client_init, esp_client_poll, esp_client_start_wifi, esp_client_start_ws
 .export recv_buff
 
 .import serial_open, serial_read
@@ -19,6 +19,22 @@ esp_client_start_wifi:
             sta $fc
             jmp send
 
+esp_client_start_ws:
+            lda $fb
+            pha
+            lda $fc
+            pha
+            lda #<start_ws
+            sta $fb
+            lda #>start_ws
+            sta $fc
+            jsr send
+            pla
+            sta $fc
+            pla
+            sta $fb
+            jmp send
+
 send:
             ldy #$00
 :           lda ($fb),y
@@ -29,7 +45,6 @@ send:
             cmp #$0a
             bne :-
 send_exit:  rts
-
 
 ;-------------------------------------------------------------------------------
 
