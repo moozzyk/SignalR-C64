@@ -2,6 +2,7 @@
 .export recv_buff
 
 .import serial_open, serial_read
+.import echo_off, start_wifi, start_ws
 
 .include "esp-client-const.inc"
 
@@ -112,7 +113,3 @@ recv_buff:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-
-echo_off:   .byte "echooff", $0a
-start_wifi: .byte "wifion", $0a
-start_ws:   .byte "wsstart$", $00
