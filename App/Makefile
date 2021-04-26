@@ -1,5 +1,5 @@
 SOURCES = main.s rs-232.s signalr-client.s esp-client.s
-ASCIIRES = esp-client-strings.s
+ASCIIRES = esp-client-strings.s signalr-client-strings.s
 PROGRAM = app.prg
 
 CA    = ca65
@@ -9,8 +9,8 @@ FLAGS = -t c64 -u __EXEHDR__ -C c64-asm.cfg -m $(PROGRAM).map -g -Ln $(PROGRAM).
 .PHONY: all clean
 all: $(PROGRAM)
 
-$(ASCIIRES:.s=.o): $(ASCIIRES)
-	$(CA) -t none $(ASCIIRES)
+%.o: %.s
+	$(CA) -t none $<
 
 $(PROGRAM): $(SOURCES) $(ASCIIRES:.s=.o)
 	$(CC) $(FLAGS) -o $@ $(SOURCES) $(ASCIIRES:.s=.o)

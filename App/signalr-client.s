@@ -1,5 +1,6 @@
 .export signalr_init, signalr_run
 .import esp_client_init, esp_client_poll, esp_client_start_wifi, esp_client_start_ws, recv_buff
+.import host
 
 .include "esp-client-const.inc"
 
@@ -68,4 +69,3 @@ l:          lda recv_buff,y
             rts
 
 state:      .byte 0
-host:       .asciiz "ws://192.168.86.165:5000/chat\n"
