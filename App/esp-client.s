@@ -52,10 +52,14 @@ send_exit:  rts
 READ_STATUS = 0
 READ_DATA = 1
 READ_ERROR = 2
+READ_WS = 3
+
 ; Y: 0 - continue
 ;    1 - DATA, data in recv_buff
 ;    2 - ERROR, description in recv_buff
 ;    3 - OK, no additional details in recv_buff
+;    4 - WS, description in recv_buff
+;
 ; X: data length (if Y != 0)
 esp_client_poll:
             jsr serial_read
@@ -84,18 +88,25 @@ read_line:
             jsr reset_index
             cpy #READ_STATUS
             beq parse_status
-            ldy #READ_STATUS
-            sty state
-            ldy #RESULT_ERROR   ; line and not status - must be an error
+            cpy #READ_WS
+            bne not_ws
+            ldy #RESULT_WS
+            jmp reset_status
+not_ws:     ldy #RESULT_ERROR   ; not status, not ws - must be error
+reset_status:
+            lda #READ_STATUS
+            sta state
             rts
 
 parse_status:
             lda recv_buff + 1   ; check the second letter due to a weird bug
-            cmp #$4B            ; 'K'
+            cmp #$4B            ; 'K' (OK)
             beq status_OK
-            cmp #$52            ; 'R'
+            cmp #$52            ; 'R' (ERROR)
             beq status_error
-            ldy #READ_DATA      ; status does not start with 'O' or 'E' - assuming 'DATA'
+            cmp #$53            ; 'S' (WS)
+            beq status_WS
+            ldy #READ_DATA      ; assuming 'DATA'
             sty state
             ldy #RESULT_DATA
             rts
@@ -108,6 +119,12 @@ status_OK:
 
 status_error:
             ldy #READ_ERROR
+            sty state
+            ldy #RESULT_CONTINUE
+            rts
+
+status_WS:
+            ldy #READ_WS
             sty state
             ldy #RESULT_CONTINUE
             rts

@@ -31,7 +31,13 @@ signalr_run:
             beq on_error
             ; TODO handle RESULT_DATA
             cpy #RESULT_OK
-            bne on_error
+            beq ok_call
+            cpy #RESULT_WS
+            bne on_error        ; unexpected state
+            lda recv_buff
+            cmp #$43            ; 'C' for 'Connected'
+            beq ok_call
+            jmp on_error
 ok_call:    jsr $0000
 exit:       rts
 
