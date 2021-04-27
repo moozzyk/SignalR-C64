@@ -1,8 +1,8 @@
-.export esp_client_init, esp_client_poll, esp_client_start_wifi, esp_client_start_ws
+.export esp_client_init, esp_client_poll, esp_client_start_wifi, esp_client_start_ws, esp_client_ws_send
 .export recv_buff
 
 .import serial_open, serial_read
-.import echo_off, start_wifi, start_ws
+.import echo_off, start_wifi, start_ws, ws_send
 
 .include "esp-client-const.inc"
 
@@ -27,6 +27,22 @@ esp_client_start_ws:
             lda #<start_ws
             sta $fb
             lda #>start_ws
+            sta $fc
+            jsr send
+            pla
+            sta $fc
+            pla
+            sta $fb
+            jmp send
+
+esp_client_ws_send:
+            lda $fb
+            pha
+            lda $fc
+            pha
+            lda #<ws_send
+            sta $fb
+            lda #>ws_send
             sta $fc
             jsr send
             pla

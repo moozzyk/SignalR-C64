@@ -1,6 +1,6 @@
 .export signalr_init, signalr_run
-.import esp_client_init, esp_client_poll, esp_client_start_wifi, esp_client_start_ws, recv_buff
-.import host
+.import esp_client_init, esp_client_poll, esp_client_start_wifi, esp_client_start_ws, esp_client_ws_send, recv_buff
+.import host, handshake
 
 .include "esp-client-const.inc"
 
@@ -60,8 +60,21 @@ on_wifi_started:
             jmp esp_client_start_ws
 
 on_ws_connected:
-            jsr print_buff
+            lda #<handle_handshake
+            sta ok_call + 1
+            lda #>handle_handshake
+            sta ok_call + 2
+            lda #<handshake
+            sta $fb
+            lda #>handshake
+            sta $fc
+            jmp esp_client_ws_send
+            rts
 
+handle_handshake:
+            lda #'A'
+            sta $500
+            jsr print_buff
             rts
 
 print_buff:
