@@ -6,6 +6,35 @@
 
 .include "esp-client-const.inc"
 
+.macro save_arg
+            lda $fb
+            pha
+            lda $fc
+            pha
+.endmacro
+
+.macro restore_arg
+            pla
+            sta $fc
+            pla
+            sta $fb
+.endmacro
+
+.macro prepare_send cmd_addr
+            lda #<cmd_addr
+            sta $fb
+            lda #>cmd_addr
+            sta $fc
+.endmacro
+
+.macro send_with_arg cmd_addr
+            save_arg
+            prepare_send cmd_addr
+            jsr send
+            restore_arg
+            jmp send
+.endmacro
+
 esp_client_init:
             lda #$00
             sta state
@@ -13,43 +42,14 @@ esp_client_init:
             jmp serial_open
 
 esp_client_start_wifi:
-            lda #<start_wifi
-            sta $fb
-            lda #>start_wifi
-            sta $fc
+            prepare_send start_wifi
             jmp send
 
 esp_client_start_ws:
-            lda $fb
-            pha
-            lda $fc
-            pha
-            lda #<start_ws
-            sta $fb
-            lda #>start_ws
-            sta $fc
-            jsr send
-            pla
-            sta $fc
-            pla
-            sta $fb
-            jmp send
+            send_with_arg start_ws
 
 esp_client_ws_send:
-            lda $fb
-            pha
-            lda $fc
-            pha
-            lda #<ws_send
-            sta $fb
-            lda #>ws_send
-            sta $fc
-            jsr send
-            pla
-            sta $fc
-            pla
-            sta $fb
-            jmp send
+            send_with_arg ws_send
 
 send:
             ldy #$00
