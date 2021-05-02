@@ -89,7 +89,7 @@ handle_incoming:
             pha
             jsr to_screen_code
             ldx dbg_index
-            sta $500,x
+            sta $608,x
             inc dbg_index
             pla
             ;-----

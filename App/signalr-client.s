@@ -43,13 +43,12 @@ ok_call:    jsr $0000
 exit:       rts
 
 on_error:
-            jsr print_buff
+            inc $400            ; DEBUG LOL
             lda #ERROR
             sta state
             rts
 
 on_wifi_started:
-            jsr print_buff
             lda #<on_ws_connected
             sta ok_call + 1
             lda #>on_ws_connected
@@ -73,21 +72,9 @@ on_ws_connected:
             rts
 
 handle_handshake:
-            jsr print_buff
             rts
 
 on_data:
-            jsr print_buff
-            rts
-
-print_buff:
-            ldy #$00
-l:          lda recv_buff,y
-            sbc #$40
-            sta $400,y
-            iny
-            dex
-            bne l
             rts
 
 state:      .byte 0
