@@ -143,7 +143,7 @@ void wsStart(const String& url) {
 }
 
 void wsSend(const String& message) {
-  if (webSocket.sendTXT((message).c_str())) {
+  if (webSocket.sendBIN((uint8_t*)(message).c_str(), message.length())) {
     reportSuccess();
   } else {
     reportError("Send failed");

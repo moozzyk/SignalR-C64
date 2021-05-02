@@ -29,7 +29,8 @@ signalr_run:
             beq exit
             cpy #RESULT_ERROR
             beq on_error
-            ; TODO handle RESULT_DATA
+            cpy #RESULT_DATA
+            beq on_data
             cpy #RESULT_OK
             beq ok_call
             cpy #RESULT_WS
@@ -72,8 +73,10 @@ on_ws_connected:
             rts
 
 handle_handshake:
-            lda #'A'
-            sta $500
+            jsr print_buff
+            rts
+
+on_data:
             jsr print_buff
             rts
 

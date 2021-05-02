@@ -85,19 +85,37 @@ esp_client_poll:
             rts
 
 handle_incoming:
+            ;---- DEBUG - remove
+            pha
+            jsr to_screen_code
+            ldx dbg_index
+            sta $500,x
+            inc dbg_index
+            pla
+            ;-----
             ldx index
             sta recv_buff,x
             inc index
             ldy state
             cpy #READ_DATA
+            bne try_read_line
+            ; HACK - 1e - record separator this is SignalR
+            ; specific but easier than parsing size
+            cmp #$1e
             beq read_data
+            ldy #RESULT_CONTINUE
+            rts
+try_read_line:
             cmp #$0a
             beq read_line
             ldy #RESULT_CONTINUE
             rts
 
 read_data:
-            ; TODO: read_data
+            jsr reset_index
+            ldy #READ_STATUS
+            sty state
+            ldy #RESULT_DATA
             rts
 
 read_line:
@@ -122,10 +140,7 @@ parse_status:
             beq status_error
             cmp #$53            ; 'S' (WS)
             beq status_WS
-            ldy #READ_DATA      ; assuming 'DATA'
-            sty state
-            ldy #RESULT_DATA
-            rts
+            jmp status_DATA     ; assuming 'DATA'
 
 status_OK:
             ldy #READ_STATUS
@@ -145,10 +160,42 @@ status_WS:
             ldy #RESULT_CONTINUE
             rts
 
+status_DATA:
+            ldy #READ_DATA
+            sty state
+            ldy #RESULT_CONTINUE
+            rts
+
+
 reset_index:
             lda #$00
             sta index
             rts
+
+;--- DEBUG - remove (does not work well anyways)
+to_screen_code:
+    cmp #0
+    beq exitconv
+    cmp #32         ;' ' character
+    beq exitconv
+    cmp #33         ;! character
+    beq exitconv
+    cmp #42         ;* character
+    beq exitconv
+    cmp #48         ;numbers 0-9
+    bcs numconv
+conv:
+    sec
+    sbc #$40
+    jmp exitconv
+numconv:
+    cmp #58
+    bcc exitconv
+    jmp conv
+exitconv:
+    rts
+dbg_index:  .byte 0
+;-----
 
 index:      .byte 0
 state:      .byte READ_STATUS
@@ -161,3 +208,6 @@ recv_buff:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+
+
