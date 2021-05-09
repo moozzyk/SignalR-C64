@@ -28,6 +28,6 @@ serial_read:
             ldy $29c        ; ridbs
             cpy $29b        ; ridbe
             beq empty
-            ldx #1
+            inx
             jsr $ffe4
 empty:      rts
