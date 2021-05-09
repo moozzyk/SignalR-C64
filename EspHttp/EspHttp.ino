@@ -12,11 +12,6 @@
 #define COMMAND_SET_PASS "PASS$"
 #define COMMAND_START_WIFI "WIFION"
 #define COMMAND_STOP_WIFI "WIFIOFF"
-#define COMMAND_HTTP_GET "GET$"
-#define COMMAND_HTTP_POST "POST$"
-#define COMMAND_SET_BODY "BODY$"
-#define COMMAND_ECHO_ON "ECHOON"
-#define COMMAND_ECHO_OFF "ECHOOFF"
 #define COMMAND_WS_START "WSSTART$"
 #define COMMAND_WS_SEND "WSSEND$"
 
@@ -28,7 +23,6 @@ String ssid = "";
 String pass = "";
 
 int mode = MODE_ACCEPT_COMMAND;
-bool echo = false;
 
 WebSocketsClient webSocket;
 
@@ -150,37 +144,6 @@ void wsSend(const String& message) {
   }
 }
 
-void sendHttpRequest(const char* method, const String& url, const String& payload) {
-  HTTPClient httpClient;
-  httpClient.begin(url);
-  int statusCode = httpClient.sendRequest(method, payload);
-  if (statusCode < 0) {
-    reportError(String(statusCode, DEC));
-  } else {
-    reportSuccess();
-    Serial.print(statusCode);
-    Serial.print(" ");
-    const String& body = httpClient.getString();
-    Serial.println(body.length());
-    yield();
-    const int batchSize = 256;
-    for (int i = 0; i < body.length(); i += batchSize) {
-      Serial.print(body.substring(i, i + batchSize));
-      yield();
-    }
-  }
-
-  httpClient.end();
-}
-
-void httpGet(const String& url) {
-  sendHttpRequest("GET", url, "");
-}
-
-void httpPost(const String& url) {
-  sendHttpRequest("POST", url, payload);
-}
-
 void executeCommand() {
   mode = MODE_EXECUTE_COMMAND;
   command.trim();
@@ -196,16 +159,6 @@ void executeCommand() {
     wifiConnect();
   } else if (upperCaseCommand == COMMAND_STOP_WIFI) {
     wifiDisconnect();
-  } else if (upperCaseCommand.startsWith(COMMAND_HTTP_GET)) {
-    httpGet(command.substring(strlen(COMMAND_HTTP_GET)));
-  } else if (upperCaseCommand.startsWith(COMMAND_HTTP_POST)) {
-    httpPost(command.substring(strlen(COMMAND_HTTP_POST)));
-  } else if (upperCaseCommand == COMMAND_ECHO_ON) {
-    echo = true;
-    reportSuccess();
-  } else if (upperCaseCommand == COMMAND_ECHO_OFF) {
-    echo = false;
-    reportSuccess();
   } else if (upperCaseCommand.startsWith(COMMAND_WS_START)) {
     wsStart(command.substring(strlen(COMMAND_WS_START)));
   } else if (upperCaseCommand.startsWith(COMMAND_WS_SEND)) {
@@ -236,14 +189,8 @@ void loop() {
   }
 
   if (c == '\n' || c == '\r') {
-    if (echo) {
-      Serial.println();
-    }
     executeCommand();
   } else {
     command.concat((char)c);
-    if (echo) {
-      Serial.write(c);
-    }
   }
 }
