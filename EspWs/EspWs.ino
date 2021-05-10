@@ -8,21 +8,22 @@
 #define MODE_ACCEPT_COMMAND 1
 #define MODE_EXECUTE_COMMAND 2
 
-#define COMMAND_SET_SSID "SSID$"
-#define COMMAND_SET_PASS "PASS$"
-#define COMMAND_START_WIFI "WIFION"
-#define COMMAND_STOP_WIFI "WIFIOFF"
-#define COMMAND_WS_START "WSSTART$"
-#define COMMAND_WS_SEND "WSSEND$"
+#define COMMAND_SET_SSID 1
+#define COMMAND_SET_PASS 2
+#define COMMAND_START_WIFI 3
+#define COMMAND_STOP_WIFI 4
+#define COMMAND_START_WEBSOCKET 5
+#define COMMAND_WEBSOCKET_SEND 6
 
-
-String command = "";
 String payload = "";
 
 String ssid = "";
 String pass = "";
 
 int mode = MODE_ACCEPT_COMMAND;
+char command[257];
+unsigned int commandIndex = 0;
+unsigned int remainingBytes = 0;
 
 WebSocketsClient webSocket;
 
@@ -46,24 +47,24 @@ void reportWebSocketStatus(const String& status) {
 }
 
 String WiFiStatusToString(int status) {
-    switch(status) {
-      case WL_IDLE_STATUS:
-        return "WL_IDLE_STATUS";
-      case WL_NO_SSID_AVAIL:
-        return "WL_NO_SSID_AVAIL";
-      case WL_SCAN_COMPLETED:
-        return "WL_SCAN_COMPLETED";
-      case WL_CONNECTED:
-        return "WL_CONNECTED";
-      case WL_CONNECT_FAILED:
-        return "WL_CONNECT_FAILED";
-      case WL_CONNECTION_LOST:
-        return "WL_CONNECTION_LOST";
-      case WL_DISCONNECTED:
-        return "WL_DISCONNECTED";
-      default:
-        return String(status);
-    }
+  switch (status) {
+    case WL_IDLE_STATUS:
+      return "WL_IDLE_STATUS";
+    case WL_NO_SSID_AVAIL:
+      return "WL_NO_SSID_AVAIL";
+    case WL_SCAN_COMPLETED:
+      return "WL_SCAN_COMPLETED";
+    case WL_CONNECTED:
+      return "WL_CONNECTED";
+    case WL_CONNECT_FAILED:
+      return "WL_CONNECT_FAILED";
+    case WL_CONNECTION_LOST:
+      return "WL_CONNECTION_LOST";
+    case WL_DISCONNECTED:
+      return "WL_DISCONNECTED";
+    default:
+      return String(status);
+  }
 }
 
 void wifiConnect() {
@@ -89,7 +90,7 @@ void wifiDisconnect() {
 }
 
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
-  switch(type) {
+  switch (type) {
     case WStype_DISCONNECTED:
       reportWebSocketStatus("Disconnected");
       break;
@@ -129,15 +130,15 @@ void wsStart(const String& url) {
 
   String host, port, path;
   host = url.substring(hostIndex, portIndex);
-  port = url.substring(portIndex+1, pathIndex);
+  port = url.substring(portIndex + 1, pathIndex);
   path = url.substring(pathIndex);
 
   webSocket.onEvent(webSocketEvent);
   webSocket.begin(host, port.toInt(), path);
 }
 
-void wsSend(const String& message) {
-  if (webSocket.sendBIN((uint8_t*)(message).c_str(), message.length())) {
+void wsSend(const char* message, unsigned int len) {
+  if (webSocket.sendBIN((uint8_t*)message, len)) {
     reportSuccess();
   } else {
     reportError("Send failed");
@@ -146,34 +147,40 @@ void wsSend(const String& message) {
 
 void executeCommand() {
   mode = MODE_EXECUTE_COMMAND;
-  command.trim();
-  String upperCaseCommand = command;
-  upperCaseCommand.toUpperCase();
-  if (upperCaseCommand.startsWith(COMMAND_SET_SSID)) {
-    ssid = command.substring(strlen(COMMAND_SET_SSID));
-    reportSuccess();
-  } else if (upperCaseCommand.startsWith(COMMAND_SET_PASS)) {
-    pass = command.substring(strlen(COMMAND_SET_PASS));
-    reportSuccess();
-  } else if (upperCaseCommand == COMMAND_START_WIFI) {
-    wifiConnect();
-  } else if (upperCaseCommand == COMMAND_STOP_WIFI) {
-    wifiDisconnect();
-  } else if (upperCaseCommand.startsWith(COMMAND_WS_START)) {
-    wsStart(command.substring(strlen(COMMAND_WS_START)));
-  } else if (upperCaseCommand.startsWith(COMMAND_WS_SEND)) {
-    wsSend(command.substring(strlen(COMMAND_WS_SEND)));
-  } else {
-    reportError("Invalid command");
+  char command_id = command[0];
+  switch (command_id) {
+    case COMMAND_SET_SSID:
+      ssid = String(command + 1);
+      reportSuccess();
+      break;
+    case COMMAND_SET_PASS:
+      pass = String(command+1);
+      reportSuccess();
+      break;
+    case COMMAND_START_WIFI:
+      wifiConnect();
+      break;
+    case COMMAND_STOP_WIFI:
+      wifiDisconnect();
+      break;
+    case COMMAND_START_WEBSOCKET:
+      wsStart(command + 1);
+      break;
+    case COMMAND_WEBSOCKET_SEND:
+      wsSend(command + 1, commandIndex - 2);
+      break;
+    default:
+      reportError("Invalid command");
   }
 
-  command = "";
   mode = MODE_ACCEPT_COMMAND;
 }
 
 void setup() {
   Serial.begin(BAUD_RATE);
   mode = MODE_ACCEPT_COMMAND;
+  remainingBytes = 0;
+  commandIndex = 0;
 }
 
 void loop() {
@@ -188,9 +195,16 @@ void loop() {
     return;
   }
 
-  if (c == '\n' || c == '\r') {
+  if (remainingBytes == 0) {
+    remainingBytes = c;
+    commandIndex = 0;
+    return;
+  }
+
+  command[commandIndex++] = (char)c;
+  remainingBytes--;
+  if (remainingBytes == 0) {
+    command[commandIndex] = '\0';
     executeCommand();
-  } else {
-    command.concat((char)c);
   }
 }
