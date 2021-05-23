@@ -26,7 +26,7 @@ String ssid = "";
 String pass = "";
 
 int mode = MODE_ACCEPT_COMMAND;
-char command[257];
+char command[258];
 unsigned int commandIndex = 0;
 unsigned int remainingBytes = 0;
 
@@ -159,11 +159,11 @@ void executeCommand() {
   char command_id = command[0];
   switch (command_id) {
     case COMMAND_SET_SSID:
-      ssid = String(command + 1);
+      ssid = String(command + 2);
       reportSuccess();
       break;
     case COMMAND_SET_PASS:
-      pass = String(command+1);
+      pass = String(command + 2);
       reportSuccess();
       break;
     case COMMAND_START_WIFI:
@@ -173,10 +173,10 @@ void executeCommand() {
       wifiDisconnect();
       break;
     case COMMAND_START_WEBSOCKET:
-      wsStart(command + 1);
+      wsStart(command + 2);
       break;
     case COMMAND_WEBSOCKET_SEND:
-      wsSend(command + 1, commandIndex - 2);
+      wsSend(command + 2, commandIndex - 2);
       break;
     default:
       reportError("Invalid command");
@@ -204,16 +204,15 @@ void loop() {
     return;
   }
 
-  if (remainingBytes == 0) {
-    remainingBytes = c;
-    commandIndex = 0;
-    return;
+  command[commandIndex++] = (char)c;
+  if (commandIndex == 2) {
+    remainingBytes = c + 1;
   }
 
-  command[commandIndex++] = (char)c;
   remainingBytes--;
   if (remainingBytes == 0) {
     command[commandIndex] = '\0';
     executeCommand();
+    commandIndex = 0;
   }
 }

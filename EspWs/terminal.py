@@ -38,9 +38,9 @@ def parse_command(command):
 
 
 def serialize_command(cmd_id, args):
-    if (len(args)) > 254:
+    if (len(args)) > 255:
         raise ValueError("Command too long")
-    return bytes([len(args) + 1, cmd_id]) + args.encode('utf-8')
+    return bytes([cmd_id, len(args)]) + args.encode('utf-8')
 
 
 def read_and_print_message(s):
@@ -60,6 +60,7 @@ def try_read_and_print_messages(s):
 def write_and_wait(s, command):
     cmd_id, args = parse_command(command)
     payload = serialize_command(cmd_id, args)
+    print(payload)
     s.write(payload)
     read_and_print_message(s)
     try_read_and_print_messages(s)
