@@ -15,6 +15,11 @@
 #define COMMAND_START_WEBSOCKET 5
 #define COMMAND_WEBSOCKET_SEND 6
 
+#define RESULT_OK 1
+#define RESULT_ERROR 2
+#define RESULT_DATA 3
+#define RESULT_WS 4
+
 String payload = "";
 
 String ssid = "";
@@ -27,23 +32,28 @@ unsigned int remainingBytes = 0;
 
 WebSocketsClient webSocket;
 
-void reportError(const String& errorMessage) {
-  Serial.println("ERROR");
-  Serial.println(errorMessage);
+void reportWithPayload(int8_t resultCode, uint8_t* payload, size_t len) {
+  // max payload length 255 for simplicity
+  len = len > 255 ? 255: len;
+  Serial.write(resultCode);
+  Serial.write(len & 0xff);
+  Serial.write(payload, len);
 }
 
 void reportSuccess() {
-  Serial.println("OK");
+  Serial.write(RESULT_OK);
 }
 
-void reportData(const String& data) {
-  Serial.println("DATA " + String(data.length()));
-  Serial.println(data);
+void reportError(const String& errorMessage) {
+  reportWithPayload(RESULT_ERROR, (uint8_t*)(errorMessage.c_str()), errorMessage.length());
 }
 
-void reportWebSocketStatus(const String& status) {
-  Serial.println("WS");
-  Serial.println(status);
+void reportData(uint8_t* payload, size_t len) {
+  reportWithPayload(RESULT_DATA, payload, len);
+}
+
+void reportWebSocketStatus(const char* status) {
+  reportWithPayload(RESULT_WS, (uint8_t*)(status), strlen(status));
 }
 
 String WiFiStatusToString(int status) {
@@ -89,7 +99,7 @@ void wifiDisconnect() {
   reportSuccess();
 }
 
-void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
+void webSocketEvent(WStype_t type, uint8_t* payload, size_t len) {
   switch (type) {
     case WStype_DISCONNECTED:
       reportWebSocketStatus("Disconnected");
@@ -98,7 +108,7 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       reportWebSocketStatus("Connected");
       break;
     case WStype_TEXT:
-      reportData(String((const char*)payload));
+      reportData(payload, len);
       break;
     default:
       break;
@@ -112,7 +122,6 @@ void wsStart(const String& url) {
   }
 
   int hostIndex = 0;
-  bool isSecureWs = false;
   if (url.startsWith("wss://")) {
     reportError("Secure WebSocket not supported");
     return;

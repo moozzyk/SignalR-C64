@@ -16,6 +16,18 @@ command_map = {
     "wssend$":  COMMAND_WEBSOCKET_SEND,
 }
 
+RESULT_OK = 1
+RESULT_ERROR = 2
+RESULT_DATA = 3
+RESULT_WS = 4
+
+result_code_to_string = {
+    RESULT_OK: "OK",
+    RESULT_ERROR: "ERROR",
+    RESULT_DATA: "DATA",
+    RESULT_WS: "WS",
+}
+
 
 def parse_command(command):
     lower_case_command = command.lower()
@@ -31,18 +43,26 @@ def serialize_command(cmd_id, args):
     return bytes([len(args) + 1, cmd_id]) + args.encode('utf-8')
 
 
+def read_and_print_message(s):
+    result_code = s.read()[0]
+    print(result_code_to_string[result_code])
+    if result_code != RESULT_OK:
+        length = s.read()[0]
+        payload = s.read(length)
+        print(payload)
+
+
+def try_read_and_print_messages(s):
+    while s.in_waiting > 0:
+        read_and_print_message(s)
+
+
 def write_and_wait(s, command):
     cmd_id, args = parse_command(command)
     payload = serialize_command(cmd_id, args)
     s.write(payload)
-    result = s.readline().decode('utf-8').strip()
-    print(result)
-    if 'ERROR' in result or 'WS' in result or 'DATA' in result:
-        read(s)
-
-
-def read(s):
-    print(s.readline().decode('utf-8').strip())
+    read_and_print_message(s)
+    try_read_and_print_messages(s)
 
 
 def main():
@@ -53,7 +73,10 @@ def main():
             break
         try:
             if command == '>':
-                read(s)
+                if s.in_waiting > 0:
+                    try_read_and_print_messages(s)
+                else:
+                    print("No data waiting")
             else:
                 write_and_wait(s, command.strip())
         except ValueError as err:
