@@ -32,28 +32,30 @@ unsigned int remainingBytes = 0;
 
 WebSocketsClient webSocket;
 
-void reportWithPayload(int8_t resultCode, uint8_t* payload, size_t len) {
+void report(int8_t resultCode, uint8_t* payload, size_t len) {
   // max payload length 255 for simplicity
   len = len > 255 ? 255: len;
   Serial.write(resultCode);
   Serial.write(len & 0xff);
-  Serial.write(payload, len);
+  if (len > 0) {
+    Serial.write(payload, len);
+  }
 }
 
 void reportSuccess() {
-  Serial.write(RESULT_OK);
+  report(RESULT_OK, NULL, 0);
 }
 
 void reportError(const String& errorMessage) {
-  reportWithPayload(RESULT_ERROR, (uint8_t*)(errorMessage.c_str()), errorMessage.length());
+  report(RESULT_ERROR, (uint8_t*)(errorMessage.c_str()), errorMessage.length());
 }
 
 void reportData(uint8_t* payload, size_t len) {
-  reportWithPayload(RESULT_DATA, payload, len);
+  report(RESULT_DATA, payload, len);
 }
 
 void reportWebSocketStatus(const char* status) {
-  reportWithPayload(RESULT_WS, (uint8_t*)(status), strlen(status));
+  report(RESULT_WS, (uint8_t*)(status), strlen(status));
 }
 
 String WiFiStatusToString(int status) {

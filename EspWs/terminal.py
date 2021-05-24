@@ -45,9 +45,9 @@ def serialize_command(cmd_id, args):
 
 def read_and_print_message(s):
     result_code = s.read()[0]
+    length = s.read()[0]
     print(result_code_to_string[result_code])
-    if result_code != RESULT_OK:
-        length = s.read()[0]
+    if length > 0:
         payload = s.read(length)
         print(payload)
 
