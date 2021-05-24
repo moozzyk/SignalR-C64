@@ -1,5 +1,5 @@
 .export signalr_init, signalr_run
-.import esp_client_init, esp_client_poll, esp_client_start_wifi, esp_client_start_ws, esp_client_ws_send, recv_buff
+.import esp_client_init, esp_client_poll, esp_client_start_wifi, esp_client_start_ws, esp_client_ws_send, data_buff
 .import host, handshake
 
 .include "esp-client-const.inc"
@@ -35,7 +35,7 @@ signalr_run:
             beq ok_call
             cpy #RESULT_WS
             bne on_error        ; unexpected state
-            lda recv_buff
+            lda data_buff
             cmp #$43            ; 'C' for 'Connected'
             beq ok_call
             jmp on_error
@@ -57,6 +57,7 @@ on_wifi_started:
             sta $fb
             lda #>host
             sta $fc
+            ldx #29    ; host arg length
             jmp esp_client_start_ws
 
 on_ws_connected:
@@ -68,6 +69,7 @@ on_ws_connected:
             sta $fb
             lda #>handshake
             sta $fc
+            ldx #33    ; payload length
             jmp esp_client_ws_send
             rts
 

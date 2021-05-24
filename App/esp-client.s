@@ -1,74 +1,64 @@
 .export esp_client_init, esp_client_poll, esp_client_start_wifi, esp_client_start_ws, esp_client_ws_send
-.export recv_buff
+.export data_buff
 
 .import serial_open, serial_read
-.import echo_off, start_wifi, start_ws, ws_send
 
 .include "esp-client-const.inc"
 
-.macro save_arg
-            lda $fb
-            pha
-            lda $fc
-            pha
-.endmacro
+COMMAND_START_WIFI = 3
+COMMAND_STOP_WIFI = 4
+COMMAND_START_WEBSOCKET = 5
+COMMAND_WEBSOCKET_SEND = 6
 
-.macro restore_arg
-            pla
-            sta $fc
-            pla
-            sta $fb
-.endmacro
-
-.macro prepare_send cmd_addr
-            lda #<cmd_addr
-            sta $fb
-            lda #>cmd_addr
-            sta $fc
-.endmacro
-
-.macro send_with_arg cmd_addr
-            save_arg
-            prepare_send cmd_addr
-            jsr send
-            restore_arg
-            jmp send
+.macro reset_index
+            lda #$00
+            sta index
+            lda #$ff
+            sta remaining
 .endmacro
 
 esp_client_init:
+            reset_index
+            jsr serial_open
+            ; workaround to a bug
+            lda #$02
+            sta garbage
+            lda #COMMAND_STOP_WIFI
+            jsr $ffd2
             lda #$00
-            sta state
-            sta index
-            jmp serial_open
+            jsr $ffd2
+            rts
 
 esp_client_start_wifi:
-            prepare_send start_wifi
-            jmp send
+            lda #COMMAND_START_WIFI
+            jsr $ffd2
+            lda #$00        ; arg length
+            jsr $ffd2
+            rts
 
 esp_client_start_ws:
-            send_with_arg start_ws
+            lda #COMMAND_START_WEBSOCKET
+            jmp send
 
 esp_client_ws_send:
-            send_with_arg ws_send
+            lda #COMMAND_WEBSOCKET_SEND
+            jmp send
 
+; A - command
+; X - arg length
 send:
+            jsr $ffd2
+            txa
+            jsr $ffd2
             ldy #$00
 :           lda ($fb),y
-            cmp #$00
-            beq send_exit
-            iny
             jsr $ffd2
-            cmp #$0a
+            iny
+            dex
             bne :-
-send_exit:  rts
+            rts
 
 ;-------------------------------------------------------------------------------
-
-; state
-READ_STATUS = 0
-READ_DATA = 1
-READ_ERROR = 2
-READ_WS = 3
 
 ; Y: 0 - continue
 ;    1 - DATA, data in recv_buff
@@ -93,83 +83,28 @@ handle_incoming:
             inc dbg_index
             pla
             ;-----
+            ldx garbage
+            beq no_garbage
+            dec garbage
+            ldy #RESULT_CONTINUE
+            rts
+
+no_garbage:
             ldx index
             sta recv_buff,x
             inc index
-            ldy state
-            cpy #READ_DATA
-            bne try_read_line
-            ; HACK - 1e - record separator this is SignalR
-            ; specific but easier than parsing size
-            cmp #$1e
-            beq read_data
-            ldy #RESULT_CONTINUE
-            rts
-try_read_line:
-            cmp #$0a
-            beq read_line
+            cpx #$01
+            bne not_length
+            inc remaining
+not_length: dec remaining
+            beq read_result
             ldy #RESULT_CONTINUE
             rts
 
-read_data:
-            jsr reset_index
-            ldy #READ_STATUS
-            sty state
-            ldy #RESULT_DATA
-            rts
-
-read_line:
-            jsr reset_index
-            cpy #READ_STATUS
-            beq parse_status
-            cpy #READ_WS
-            bne not_ws
-            ldy #RESULT_WS
-            jmp reset_status
-not_ws:     ldy #RESULT_ERROR   ; not status, not ws - must be error
-reset_status:
-            lda #READ_STATUS
-            sta state
-            rts
-
-parse_status:
-            lda recv_buff + 1   ; check the second letter due to a weird bug
-            cmp #$4B            ; 'K' (OK)
-            beq status_OK
-            cmp #$52            ; 'R' (ERROR)
-            beq status_error
-            cmp #$53            ; 'S' (WS)
-            beq status_WS
-            jmp status_DATA     ; assuming 'DATA'
-
-status_OK:
-            ldy #READ_STATUS
-            sty state
-            ldy #RESULT_OK
-            rts
-
-status_error:
-            ldy #READ_ERROR
-            sty state
-            ldy #RESULT_CONTINUE
-            rts
-
-status_WS:
-            ldy #READ_WS
-            sty state
-            ldy #RESULT_CONTINUE
-            rts
-
-status_DATA:
-            ldy #READ_DATA
-            sty state
-            ldy #RESULT_CONTINUE
-            rts
-
-
-reset_index:
-            lda #$00
-            sta index
+read_result:
+            reset_index
+            dex
+            ldy recv_buff
             rts
 
 ;--- DEBUG - remove (does not work well anyways)
@@ -197,10 +132,11 @@ exitconv:
 dbg_index:  .byte 0
 ;-----
 
+garbage:    .byte 2 ; workaround for a bug
 index:      .byte 0
-state:      .byte READ_STATUS
-
-recv_buff:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+recv_buff:  .byte 0 ; also a command id
+remaining:  .byte 0
+data_buff:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

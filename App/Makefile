@@ -1,5 +1,5 @@
 SOURCES = main.s rs-232.s signalr-client.s esp-client.s
-ASCIIRES = esp-client-strings.s signalr-client-strings.s
+ASCIIRES = signalr-client-strings.s
 PROGRAM = app.prg
 
 CA    = ca65
