@@ -110,6 +110,7 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t len) {
       reportWebSocketStatus("Connected");
       break;
     case WStype_TEXT:
+    case WStype_BIN:
       reportData(payload, len);
       break;
     default:
