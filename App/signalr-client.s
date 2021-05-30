@@ -69,14 +69,16 @@ on_ws_connected:
             sta $fb
             lda #>handshake
             sta $fc
-            ldx #33    ; payload length
+            ldx #39    ; payload length
             jmp esp_client_ws_send
             rts
 
 handle_handshake:
+            inc $400
             rts
 
 on_data:
+            inc $401
             rts
 
 state:      .byte 0
