@@ -1,6 +1,8 @@
 .import signalr_init, signalr_run
+.import ui_draw_chat_window
 
 main:
+            jsr ui_draw_chat_window
             sei
             lda #<irq
             sta $314
