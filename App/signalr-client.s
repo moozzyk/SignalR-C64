@@ -17,6 +17,8 @@ signalr_init:
             sta ok_call + 1
             lda #>on_wifi_started
             sta ok_call + 2
+            lda #CONNECTING
+            sta state
             jsr esp_client_start_wifi
             rts
 
@@ -43,7 +45,8 @@ ok_call:    jsr $0000
 exit:       rts
 
 on_error:
-            inc $400            ; DEBUG LOL
+            lda #$02
+            sta $d020
             lda #ERROR
             sta state
             rts
@@ -61,9 +64,9 @@ on_wifi_started:
             jmp esp_client_start_ws
 
 on_ws_connected:
-            lda #<handle_handshake
+            lda #<on_handshake_sent
             sta ok_call + 1
-            lda #>handle_handshake
+            lda #>on_handshake_sent
             sta ok_call + 2
             lda #<handshake
             sta $fb
@@ -71,14 +74,26 @@ on_ws_connected:
             sta $fc
             ldx #39    ; payload length
             jmp esp_client_ws_send
-            rts
 
-handle_handshake:
-            inc $400
+on_handshake_sent:
             rts
 
 on_data:
+            lda state
+            cmp #CONNECTING
+            beq handle_handshake
+            lda data_buff + 2
+            cmp #$01    ; Message Type - invocation, ignore anything else (not expected)
+            bne :+
             inc $401
+:           rts
+
+handle_handshake:
+            lda data_buff + 1
+            cmp #$7d     ; Successful handshake payload '{}\0x1e', just check '}'
+            bne on_error
+            lda #CONNECTED
+            sta state
             rts
 
 state:      .byte 0
