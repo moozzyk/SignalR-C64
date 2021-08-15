@@ -79,13 +79,14 @@ on_handshake_sent:
             rts
 
 on_data:
+            ldy #RESULT_CONTINUE ; reset result to ignore non-invocation
             lda state
             cmp #CONNECTING
             beq handle_handshake
             lda data_buff + 2
-            cmp #$01    ; Message Type - invocation, ignore anything else (not expected)
+            cmp #$01            ; Message Type - invocation, ignore anything else (not expected)
             bne :+
-            inc $401
+            ldy #RESULT_DATA    ; invocation request
 :           rts
 
 handle_handshake:

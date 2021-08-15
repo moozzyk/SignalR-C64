@@ -1,6 +1,8 @@
 .import signalr_init, signalr_run
 .import ui_draw_chat_window
 
+.include "esp-client-const.inc"
+
 main:
             jsr ui_draw_chat_window
             sei
@@ -22,7 +24,14 @@ main:
 irq:
             inc $d021
             jsr signalr_run
-            dec $d021
+            cpy #RESULT_DATA
+            bne :+
+            jsr handle_invocation
+:           dec $d021
             lda #$01
             sta $d019
             jmp $ea31
+
+handle_invocation:
+            inc $d021
+            rts
