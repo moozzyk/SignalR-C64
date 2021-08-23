@@ -33,4 +33,21 @@ print_message:
             bne :-
 end:        rts
 
+.macro lines_up addr
+            .repeat 20, line
+                lda addr + ((line + 1) * $28),x
+                sta addr + (line * $28),x
+            .endrepeat
+.endmacro
+
+scroll_up:
+            ldx #$27
+:           lines_up $400
+            lines_up $d800
+            dex
+            beq *+5
+            jmp :-
+            rts
+
+
 curr_line:  .byte 0
