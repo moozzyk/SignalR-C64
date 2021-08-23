@@ -75,14 +75,6 @@ esp_client_poll:
             rts
 
 handle_incoming:
-            ;---- DEBUG - remove
-            pha
-            jsr to_screen_code
-            ldx dbg_index
-            sta $608,x
-            inc dbg_index
-            pla
-            ;-----
             ldx garbage
             beq no_garbage
             dec garbage
@@ -106,31 +98,6 @@ read_result:
             dex
             ldy recv_buff
             rts
-
-;--- DEBUG - remove (does not work well anyways)
-to_screen_code:
-    cmp #0
-    beq exitconv
-    cmp #32         ;' ' character
-    beq exitconv
-    cmp #33         ;! character
-    beq exitconv
-    cmp #42         ;* character
-    beq exitconv
-    cmp #48         ;numbers 0-9
-    bcs numconv
-conv:
-    sec
-    sbc #$40
-    jmp exitconv
-numconv:
-    cmp #58
-    bcc exitconv
-    jmp conv
-exitconv:
-    rts
-dbg_index:  .byte 0
-;-----
 
 garbage:    .byte 2 ; workaround for a bug
 index:      .byte 0
