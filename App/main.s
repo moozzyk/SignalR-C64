@@ -67,7 +67,9 @@ read_param:
             inx
             lda args,x
             jmp read
-fixstr:     sbc #$a0
+fixstr:     sec
+            sbc #$a0
+            beq exit        ; empty string
 read:       sta arg_len
             inx
 next:       lda args,x
@@ -78,8 +80,8 @@ next:       lda args,x
             iny
             inx
             dec arg_len
-            bpl next
-            rts
+            bne next
+exit:       rts
 arg_len:    .byte 0
 
 message:    .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
