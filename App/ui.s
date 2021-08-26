@@ -1,40 +1,76 @@
 .export ui_init_chat_window, print_message
 
+BACKGROUND_COLOR=0
+BORDER_COLOR = 0
+TEXT_COLOR = 7
+NAME_COLOR = 1
+
 ui_init_chat_window:
-            lda #$00
-            sta $d020
-            sta $d021
-            lda $d018        ; set upper/lower case mode
+            jsr set_colors
+            jsr clear_screen
+            lda $d018       ; set upper/lower case mode
             ora #$06
             sta $d018
-            lda #$00
+
+            lda #$00        ; init cursor
             sta target_pos + 1
             lda #$04
             sta target_pos + 2
-            lda #$20
-            ldx #$00
-:           sta $400,x
-            sta $500,x
-            sta $600,x
-            sta $700,x
-            inx
-            bne :-
 
-            lda #$40
+            lda #$00
+            sta target_color + 1
+            lda #$d8
+            sta target_color + 2
+
+            lda #$40        ; draw separator
             ldx #$28
 :           sta $76f,x
             dex
             bne :-
             rts
 
+set_colors:
+            lda #BACKGROUND_COLOR
+            sta $d020
+            lda #BORDER_COLOR
+            sta $d021
+            rts
+
+clear_screen:
+            ldx #$00
+:           lda #$20
+            sta $400,x
+            sta $500,x
+            sta $600,x
+            sta $700,x
+            lda #TEXT_COLOR
+            sta $d800,x
+            sta $d900,x
+            sta $da00,x
+            sta $db00,x
+            inx
+            bne :-
+            rts
+
 print_message:
             jsr scroll_if_needed
+            lda #NAME_COLOR
+            sta font_color + 1
             ldy #$00
             ldx #$00
 next:       lda ($fd),y
             cmp #$ff
             beq end
+            cmp #':'
+            bne target_pos
+            pha
+            lda #TEXT_COLOR
+            sta font_color + 1
+            pla
 target_pos: sta $400,x
+font_color: lda #$00
+target_color:
+            sta $d800,x
             inx
             cpx #$28
             bne :+
@@ -47,6 +83,7 @@ end:        jsr next_line
             rts
 
 max_pos = $0748
+max_col_pos = $db48
 
 next_line:
             clc
@@ -56,6 +93,14 @@ next_line:
             lda target_pos + 2
             adc #$00
             sta target_pos + 2
+
+            clc
+            lda target_color + 1
+            adc #$28
+            sta target_color + 1
+            lda target_color + 2
+            adc #$00
+            sta target_color + 2
             rts
 
 scroll_if_needed:
@@ -70,6 +115,10 @@ scroll_if_needed:
             sta target_pos + 1
             lda #>max_pos
             sta target_pos + 2
+            lda #<max_col_pos
+            sta target_color + 1
+            lda #>max_col_pos
+            sta target_color + 2
 :           rts
 
 .macro lines_up addr
