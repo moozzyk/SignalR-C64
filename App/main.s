@@ -26,17 +26,19 @@ main:
             jmp *
 irq:
             inc $d020
+            jsr poll_signalr
+            jsr poll_keyboard
+            dec $d020
+            lda #$01
+            sta $d019
+            jmp $ea31
+
+poll_signalr:
             jsr signalr_run
             cpy #RESULT_DATA
             bne :+
             jsr handle_invocation
-:           jsr keyboard_read
-            beq :+
-            sta $500
-:           dec $d020
-            lda #$01
-            sta $d019
-            jmp $ea31
+:           rts
 
 handle_invocation:
             ; assume name and length is
@@ -97,3 +99,9 @@ message:    .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+poll_keyboard:
+            jsr keyboard_read
+            beq :+
+            sta $500
+:           rts
