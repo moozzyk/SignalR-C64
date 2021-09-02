@@ -1,11 +1,13 @@
 .import signalr_init, signalr_run
 .import data_buff
 .import ui_init_chat_window, print_message
+.import keyboard_open, keyboard_read
 
 .include "esp-client-const.inc"
 
 main:
             jsr ui_init_chat_window
+            jsr keyboard_open
             sei
             lda #<irq
             sta $314
@@ -28,6 +30,9 @@ irq:
             cpy #RESULT_DATA
             bne :+
             jsr handle_invocation
+:           jsr keyboard_read
+            beq :+
+            sta $500
 :           dec $d020
             lda #$01
             sta $d019

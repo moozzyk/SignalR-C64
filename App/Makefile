@@ -1,4 +1,4 @@
-SOURCES = main.s rs-232.s signalr-client.s esp-client.s ui.s
+SOURCES = main.s rs-232.s signalr-client.s esp-client.s ui.s keyboard.s
 ASCIIRES = signalr-client-strings.s
 PROGRAM = app.prg
 
