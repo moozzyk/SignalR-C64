@@ -1,4 +1,4 @@
-.export ui_init_chat_window, print_message
+.export ui_init_chat_window, print_message, toggle_cursor
 
 BACKGROUND_COLOR=0
 BORDER_COLOR = 0
@@ -12,7 +12,7 @@ ui_init_chat_window:
             ora #$06
             sta $d018
 
-            lda #$00        ; init cursor
+            lda #$00        ; init incoming messages cursor
             sta target_pos + 1
             lda #$04
             sta target_pos + 2
@@ -27,6 +27,11 @@ ui_init_chat_window:
 :           sta $76f,x
             dex
             bne :-
+
+            lda #$00
+            sta cursor_pos
+            lda #$20
+            sta blink
             rts
 
 set_colors:
@@ -141,3 +146,20 @@ scroll_up:
             dex
             bpl :-
             rts
+
+cursor_pos: .byte 0
+blink:      .byte $20
+timer:      .byte 0
+
+toggle_cursor:
+            dec timer
+            bne :+
+            lda #$14
+            sta timer
+            lda blink
+            eor #$80
+            sta blink
+            ldx cursor_pos
+            sta $798,x
+:           rts
+

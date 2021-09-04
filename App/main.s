@@ -1,6 +1,6 @@
 .import signalr_init, signalr_run
 .import data_buff
-.import ui_init_chat_window, print_message
+.import ui_init_chat_window, print_message, toggle_cursor
 .import keyboard_open, keyboard_read
 
 .include "esp-client-const.inc"
@@ -101,6 +101,7 @@ message:    .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
 poll_keyboard:
+            jsr toggle_cursor
             jsr keyboard_read
             beq :+
             sta $500
