@@ -1,4 +1,5 @@
-.export ui_init_chat_window, print_message, toggle_cursor
+.export ui_init_chat_window, print_message
+.export toggle_cursor, handle_key_press, clear_message
 
 BACKGROUND_COLOR=0
 BORDER_COLOR = 0
@@ -151,6 +152,8 @@ cursor_pos: .byte 0
 blink:      .byte $20
 timer:      .byte 0
 
+message_start_pos = $0798
+
 toggle_cursor:
             dec timer
             bne :+
@@ -160,6 +163,41 @@ toggle_cursor:
             eor #$80
             sta blink
             ldx cursor_pos
-            sta $798,x
+            sta message_start_pos,x
 :           rts
 
+handle_key_press:
+            beq :+
+            cmp #$0d
+            beq :+
+            cmp #$14
+            beq handle_delete
+            ldx cursor_pos
+            cpx #$4f
+            bpl :+
+            sta message_start_pos,x
+            inc cursor_pos
+:           rts
+
+handle_delete:
+            ldx cursor_pos
+            beq :+
+            dec cursor_pos
+            pha
+            lda #$20
+            sta message_start_pos,x
+            dex
+            lda blink
+            sta message_start_pos,x
+            pla
+:           rts
+
+clear_message:
+            lda #$20
+            ldx #$00
+            stx cursor_pos
+:           sta message_start_pos,x
+            inx
+            cpx #$50
+            bne :-
+            rts
