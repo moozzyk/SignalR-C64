@@ -167,17 +167,22 @@ toggle_cursor:
 :           rts
 
 handle_key_press:
-            beq :+
+            beq exit
             cmp #$0d
-            beq :+
+            beq exit
             cmp #$14
             beq handle_delete
+            cmp #$20            ; skip control chars
+            bcc exit
             ldx cursor_pos
             cpx #$4f
-            bpl :+
+            bcs exit
+            pha
+            jsr petscii_to_screen_code
             sta message_start_pos,x
             inc cursor_pos
-:           rts
+            pla
+exit:       rts
 
 handle_delete:
             ldx cursor_pos
@@ -191,6 +196,44 @@ handle_delete:
             sta message_start_pos,x
             pla
 :           rts
+
+petscii_to_screen_code:     ; https://sta.c64.org/cbm64pettoscr.html
+            cmp #$40
+            bcc @exit
+
+            cmp #$60
+            bcs :+
+            sec
+            sbc #$40
+            jmp @exit
+
+:           cmp #$80
+            bcs :+
+            sec
+            sbc #$20
+            jmp @exit
+
+:           cmp #$a0
+            bcs :+
+            clc
+            adc #$40
+            jmp @exit
+
+:           cmp #$c0
+            bcs :+
+            sec
+            sbc #$40
+            jmp @exit
+
+:           cmp #$ff
+            bcs :+
+            sec
+            sbc #$80
+            jmp @exit
+
+:           lda #$5e
+
+@exit:      rts
 
 clear_message:
             lda #$20
