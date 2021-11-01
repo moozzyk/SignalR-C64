@@ -1,5 +1,6 @@
 .export ui_init_chat_window, print_message
 .export toggle_cursor, handle_key_press, clear_message
+.export message_start_pos
 
 BACKGROUND_COLOR=0
 BORDER_COLOR = 0
@@ -168,13 +169,13 @@ toggle_cursor:
 
 handle_key_press:
             beq exit
+            ldx cursor_pos
             cmp #$0d
             beq exit
             cmp #$14
             beq handle_delete
             cmp #$20            ; skip control chars
             bcc exit
-            ldx cursor_pos
             cpx #$4f
             bcs exit
             pha

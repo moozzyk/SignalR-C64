@@ -1,4 +1,4 @@
-.export signalr_init, signalr_run
+.export signalr_init, signalr_run, signalr_send
 .import esp_client_init, esp_client_poll, esp_client_start_wifi, esp_client_start_ws, esp_client_ws_send, data_buff
 .import host, handshake
 
@@ -43,6 +43,10 @@ signalr_run:
             jmp on_error
 ok_call:    jsr $0000
 exit:       rts
+
+signalr_send:
+            jsr esp_client_ws_send
+            rts
 
 on_error:
             lda #$02

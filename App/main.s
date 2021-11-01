@@ -1,7 +1,8 @@
-.import signalr_init, signalr_run
+.import signalr_init, signalr_run, signalr_send
 .import data_buff
 .import ui_init_chat_window, print_message, toggle_cursor, handle_key_press, clear_message
 .import keyboard_open, keyboard_read
+.import message_start_pos
 
 .include "esp-client-const.inc"
 
@@ -81,7 +82,7 @@ read:       sta arg_len
             inx
 next:       lda args,x
             cmp #$60
-            bmi :+
+            bcc :+
             sbc #$60
 :           sta ($fd),y
             iny
@@ -106,5 +107,66 @@ poll_keyboard:
             jsr handle_key_press
             cmp #$0d
             bne :+
+            jsr send_message
             jsr clear_message
 :           rts
+
+
+send_message:
+            jsr prepare_message
+            tya
+            tax
+            lda #<message
+            sta $fb
+            lda #>message
+            sta $fc
+            jsr signalr_send
+            rts
+
+prepare_message:
+            stx message         ; X contains length, store temporarily
+            ldx #$00
+            ldy #$01
+:           lda msg_header,x
+            beq write_name
+            sta message,y
+            inx
+            iny
+            jmp :-
+write_name:
+            lda #$a3        ; hardcoded
+            sta message,y
+            iny
+            lda #$41
+            sta message,y
+            iny
+            lda #$42
+            sta message,y
+            iny
+            lda #$43
+            sta message,y
+            iny
+
+            lda #$d9
+            sta message,y
+            iny
+            lda message     ; length
+            sta message,y   ; assumes length less than 128
+            iny
+            ldx #$00
+:           lda message_start_pos,x
+            clc             ; TODO: this needs to be done conditionally
+            adc #$60
+            sta message,y   ; TODO: convert to ASCII
+            iny
+            inx
+            cpx message
+            bne :-
+            lda #$90        ; 0x90 - 0-element array (StreamIds)
+            sta message,y
+            sty message     ; store payload length
+            iny
+            rts
+
+msg_header:
+            .byte $96,$01,$80,$a1,$c0,$a9,$42,$72,$6f,$61,$64,$63,$61,$73,$74,$92,$00
