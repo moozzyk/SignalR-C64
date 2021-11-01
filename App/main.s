@@ -81,8 +81,14 @@ fixstr:     sec
 read:       sta arg_len
             inx
 next:       lda args,x
-            cmp #$60
+            cmp #$40
+            bne :+
+            sec
+            sbc #$40
+            jmp :++
+:           cmp #$60
             bcc :+
+            sec
             sbc #$60
 :           sta ($fd),y
             iny
@@ -155,8 +161,7 @@ write_name:
             iny
             ldx #$00
 :           lda message_start_pos,x
-            clc             ; TODO: this needs to be done conditionally
-            adc #$60
+            jsr to_ascii
             sta message,y   ; TODO: convert to ASCII
             iny
             inx
@@ -167,6 +172,18 @@ write_name:
             sty message     ; store payload length
             iny
             rts
+
+to_ascii:
+            cmp #$00
+            bne :+
+            clc
+            adc #$40
+            rts
+:           cmp #$20
+            bcs :+
+            clc
+            adc #$60
+:           rts
 
 msg_header:
             .byte $96,$01,$80,$a1,$c0,$a9,$42,$72,$6f,$61,$64,$63,$61,$73,$74,$92,$00
