@@ -12,13 +12,23 @@ ERROR = 9
 signalr_init:
             lda #DISCONNECTED
             sta state
+            lda #$20
+            sta drain_count
             jsr esp_client_init
+            rts
+
+signalr_drain:
+            dec drain_count
+            beq connect
+            ldy #$01        ; draining
+            jsr esp_client_poll
+            rts
+connect:    lda #CONNECTING
+            sta state
             lda #<on_wifi_started
             sta ok_call + 1
             lda #>on_wifi_started
             sta ok_call + 2
-            lda #CONNECTING
-            sta state
             jsr esp_client_start_wifi
             rts
 
@@ -26,6 +36,9 @@ signalr_run:
             lda state
             cmp #ERROR
             beq exit
+            lda drain_count
+            bne signalr_drain
+            ldy #$00            ; not draining
             jsr esp_client_poll
             cpy #RESULT_CONTINUE
             beq exit
@@ -102,3 +115,4 @@ handle_handshake:
             rts
 
 state:      .byte 0
+drain_count:.byte 0

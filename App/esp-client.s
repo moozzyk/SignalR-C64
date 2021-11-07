@@ -20,9 +20,6 @@ COMMAND_WEBSOCKET_SEND = 6
 esp_client_init:
             reset_index
             jsr serial_open
-            ; workaround to a bug
-            lda #$02
-            sta garbage
             lda #COMMAND_STOP_WIFI
             jsr $ffd2
             lda #$00
@@ -59,7 +56,11 @@ send:
             rts
 
 ;-------------------------------------------------------------------------------
+; args
+; Y: 0 - non-draining
+; Y: 1 - draining
 
+; return values:
 ; Y: 0 - continue
 ;    1 - DATA, data in recv_buff
 ;    2 - ERROR, description in recv_buff
@@ -68,20 +69,17 @@ send:
 ;
 ; X: data length (if Y != 0)
 esp_client_poll:
+            sty draining
             jsr serial_read
-            cpx #$00
+            ldy draining
+            beq :+      ; are we draining?
+            rts
+:           cpx #$00
             bne handle_incoming
             ldy #RESULT_CONTINUE
             rts
 
 handle_incoming:
-            ldx garbage
-            beq no_garbage
-            dec garbage
-            ldy #RESULT_CONTINUE
-            rts
-
-no_garbage:
             ldx index
             sta recv_buff,x
             inc index
@@ -99,7 +97,7 @@ read_result:
             ldy recv_buff
             rts
 
-garbage:    .byte 2 ; workaround for a bug
+draining:   .byte 0
 index:      .byte 0
 recv_buff:  .byte 0 ; also a command id
 remaining:  .byte 0
