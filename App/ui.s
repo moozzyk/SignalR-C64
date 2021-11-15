@@ -1,4 +1,4 @@
-.export ui_init_chat_window, print_message
+.export ui_init_name_prompt, ui_init_chat_window, print_message
 .export toggle_cursor, handle_key_press, clear_message
 
 BACKGROUND_COLOR=0
@@ -6,13 +6,29 @@ BORDER_COLOR = 0
 TEXT_COLOR = 7
 NAME_COLOR = 1
 
-ui_init_chat_window:
+ui_reset_screen:
             jsr set_colors
             jsr clear_screen
             lda $d018       ; set upper/lower case mode
             ora #$06
             sta $d018
+            rts
 
+ui_init_name_prompt:
+            jsr ui_reset_screen
+            ldx #$00
+:           lda name_label,x
+            beq :+
+            sta $4f6,x
+            inx
+            bne :-
+:           rts
+
+name_label:
+            .byte "name: ", $00
+
+ui_init_chat_window:
+            jsr ui_reset_screen
             lda #$00        ; init incoming messages cursor
             sta target_pos + 1
             lda #$04
@@ -150,7 +166,7 @@ scroll_up:
 
 cursor_pos: .byte 0
 blink:      .byte $20
-timer:      .byte 0
+timer:      .byte $14
 
 toggle_cursor:
             dec timer
