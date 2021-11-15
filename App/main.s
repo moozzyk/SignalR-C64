@@ -2,9 +2,10 @@
 .import data_buff
 .import ui_init_chat_window, print_message, toggle_cursor, handle_key_press, clear_message
 .import keyboard_open, keyboard_read
-.import message_start_pos
 
 .include "esp-client-const.inc"
+
+message_start_pos = $0798
 
 main:
             jsr ui_init_chat_window
@@ -108,15 +109,19 @@ message:    .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
             .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
 poll_keyboard:
+            lda #<message_start_pos
+            sta $fd
+            lda #>message_start_pos
+            sta $fe
             jsr toggle_cursor
             jsr keyboard_read
+            ldx #$4f
             jsr handle_key_press
             cmp #$0d
             bne :+
             jsr send_message
             jsr clear_message
 :           rts
-
 
 send_message:
             jsr prepare_message

@@ -1,6 +1,5 @@
 .export ui_init_chat_window, print_message
 .export toggle_cursor, handle_key_press, clear_message
-.export message_start_pos
 
 BACKGROUND_COLOR=0
 BORDER_COLOR = 0
@@ -153,8 +152,6 @@ cursor_pos: .byte 0
 blink:      .byte $20
 timer:      .byte 0
 
-message_start_pos = $0798
-
 toggle_cursor:
             dec timer
             bne :+
@@ -164,10 +161,14 @@ toggle_cursor:
             eor #$80
             sta blink
             ldy cursor_pos
-            sta message_start_pos,y
+            sta ($fd),y
 :           rts
 
+; A - character
+; X - max length
 handle_key_press:
+            stx length + 1
+            cmp #$00
             beq exit
             ldy cursor_pos
             cmp #$0d
@@ -176,11 +177,11 @@ handle_key_press:
             beq handle_delete
             cmp #$20            ; skip control chars
             bcc exit
-            cpy #$4f
+length:     cpy #$00
             bcs exit
             pha
             jsr petscii_to_screen_code
-            sta message_start_pos,y
+            sta ($fd),y
             inc cursor_pos
             pla
 exit:       rts
@@ -191,10 +192,10 @@ handle_delete:
             dec cursor_pos
             pha
             lda #$20
-            sta message_start_pos,y
+            sta ($fd),y
             dey
             lda blink
-            sta message_start_pos,y
+            sta ($fd),y
             pla
 :           rts
 
@@ -240,7 +241,7 @@ clear_message:
             lda #$20
             ldy #$00
             stx cursor_pos
-:           sta message_start_pos,y
+:           sta ($fd),y
             iny
             cpy #$50
             bne :-
