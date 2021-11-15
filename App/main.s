@@ -130,7 +130,7 @@ send_message:
             rts
 
 prepare_message:
-            stx message         ; X contains length, store temporarily
+            sty message         ; Y contains length, store temporarily
             ldx #$00
             ldy #$01
 :           lda msg_header,x
@@ -162,7 +162,7 @@ write_name:
             ldx #$00
 :           lda message_start_pos,x
             jsr to_ascii
-            sta message,y   ; TODO: convert to ASCII
+            sta message,y
             iny
             inx
             cpx message

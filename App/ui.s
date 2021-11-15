@@ -163,38 +163,38 @@ toggle_cursor:
             lda blink
             eor #$80
             sta blink
-            ldx cursor_pos
-            sta message_start_pos,x
+            ldy cursor_pos
+            sta message_start_pos,y
 :           rts
 
 handle_key_press:
             beq exit
-            ldx cursor_pos
+            ldy cursor_pos
             cmp #$0d
             beq exit
             cmp #$14
             beq handle_delete
             cmp #$20            ; skip control chars
             bcc exit
-            cpx #$4f
+            cpy #$4f
             bcs exit
             pha
             jsr petscii_to_screen_code
-            sta message_start_pos,x
+            sta message_start_pos,y
             inc cursor_pos
             pla
 exit:       rts
 
 handle_delete:
-            ldx cursor_pos
+            ldy cursor_pos
             beq :+
             dec cursor_pos
             pha
             lda #$20
-            sta message_start_pos,x
-            dex
+            sta message_start_pos,y
+            dey
             lda blink
-            sta message_start_pos,x
+            sta message_start_pos,y
             pla
 :           rts
 
@@ -238,10 +238,10 @@ petscii_to_screen_code:     ; https://sta.c64.org/cbm64pettoscr.html
 
 clear_message:
             lda #$20
-            ldx #$00
+            ldy #$00
             stx cursor_pos
-:           sta message_start_pos,x
-            inx
-            cpx #$50
+:           sta message_start_pos,y
+            iny
+            cpy #$50
             bne :-
             rts
