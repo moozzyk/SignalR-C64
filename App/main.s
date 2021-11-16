@@ -144,7 +144,18 @@ poll_keyboard:
 
 allow_chat:
             inc mode
-            lda #<message_start_pos
+
+            sty name_len        ; Y contains length
+            cpy #$00            ; empty name?
+            beq name_saved
+:           dey
+            bmi name_saved
+            lda ($fd),y
+            jsr to_ascii
+            sta name,y
+            jmp :-
+
+name_saved: lda #<message_start_pos
             sta cursor_pos
             lda #>message_start_pos
             sta cursor_pos + 1
@@ -176,19 +187,22 @@ prepare_message:
             iny
             jmp :-
 write_name:
-            lda #$a3        ; hardcoded
+            clc
+            lda name_len
+            adc #$a0
             sta message,y
             iny
-            lda #$41
+            lda name_len
+            beq name_written
+            ldx #$00
+:           lda name,x
             sta message,y
             iny
-            lda #$42
-            sta message,y
-            iny
-            lda #$43
-            sta message,y
-            iny
+            inx
+            cpx name_len
+            bne :-
 
+name_written:
             lda #$d9
             sta message,y
             iny
@@ -223,6 +237,10 @@ to_ascii:
 
 msg_header:
             .byte $96,$01,$80,$a1,$c0,$a9,$42,$72,$6f,$61,$64,$63,$61,$73,$74,$92,$00
+
+name_len:   .byte $00
+name:       .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+            .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 cursor_pos:
             .byte $00, $00
 max_input_length:
