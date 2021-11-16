@@ -134,6 +134,8 @@ poll_keyboard:
             jsr keyboard_read
             ldx max_input_length
             jsr handle_key_press
+            cpy #$00
+            beq :+          ; ignore empty
             cmp #$0d
             bne :+
             lda mode
