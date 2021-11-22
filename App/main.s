@@ -1,6 +1,7 @@
 .import signalr_init, signalr_run, signalr_send
 .import data_buff
-.import ui_init_name_prompt, ui_init_chat_window, print_message, toggle_cursor, handle_key_press, clear_message
+.import ui_init_name_prompt, ui_show_connecting, ui_init_chat_window
+.import print_message, toggle_cursor, handle_key_press, clear_message
 .import keyboard_open, keyboard_read
 
 .include "esp-client-const.inc"
@@ -10,6 +11,10 @@ max_name_length = $10
 message_start_pos = $0798
 max_message_length = $4f
 
+MODE_DISCONNECTED = 0
+MODE_CONNECTING = 1
+MODE_CONNECTED = 2
+
 main:
             lda #<name_start_pos
             sta cursor_pos
@@ -17,7 +22,7 @@ main:
             sta cursor_pos + 1
             lda #max_name_length
             sta max_input_length
-            lda #$00
+            lda #MODE_DISCONNECTED
             sta mode
 
             jsr keyboard_open
@@ -41,10 +46,17 @@ irq:
             lda #$01
             sta $d020
             lda mode
-            beq :+
+            beq :+          ; mode MODE_DISCONNECTED
             jsr poll_signalr
+            cmp #$02        ; Client status: CONNECTED
+            bne :++
+            lda mode
+            cmp #MODE_CONNECTING
+            bne :+
+            inc mode
+            jsr ui_init_chat_window
 :           jsr poll_keyboard
-            lda #$00
+:           lda #$00
             sta $d020
             lda #$01
             sta $d019
@@ -54,10 +66,12 @@ mode:       .byte $00 ; 0 - input name, 1 - chat
 
 poll_signalr:
             jsr signalr_run
+            pha
             cpy #RESULT_DATA
             bne :+
             jsr handle_invocation
-:           rts
+:           pla
+            rts
 
 handle_invocation:
             ; assume name and length is
@@ -141,14 +155,13 @@ poll_keyboard:
             cmp #$0d
             bne :+
             lda mode
-            beq allow_chat
+            beq allow_connect
             jsr send_message
             jsr clear_message
 :           rts
 
-allow_chat:
+allow_connect:
             inc mode
-
             sty name_len        ; Y contains length
             cpy #$00            ; empty name?
             beq name_saved
@@ -166,7 +179,7 @@ name_saved: lda #<message_start_pos
             lda #max_message_length
             sta max_input_length
             jsr signalr_init
-            jsr ui_init_chat_window
+            jsr ui_show_connecting
             rts
 
 send_message:

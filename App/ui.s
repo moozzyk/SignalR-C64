@@ -1,4 +1,4 @@
-.export ui_init_name_prompt, ui_init_chat_window, print_message
+.export ui_init_name_prompt, ui_init_chat_window, ui_show_connecting, print_message
 .export toggle_cursor, handle_key_press, clear_message
 
 BACKGROUND_COLOR=0
@@ -26,6 +26,19 @@ ui_init_name_prompt:
 
 name_label:
             .byte "name: ", $00
+
+ui_show_connecting:
+            jsr ui_reset_screen
+            ldx #$00
+:           lda connecting_label,x
+            beq :+
+            sta $575,x
+            inx
+            bne :-
+:           rts
+
+connecting_label:
+            .byte "connecting...", $00
 
 ui_init_chat_window:
             jsr ui_reset_screen
