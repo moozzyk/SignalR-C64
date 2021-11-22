@@ -15,6 +15,7 @@ signalr_init:
             lda #$20
             sta drain_count
             jsr esp_client_init
+            lda state
             rts
 
 signalr_drain:
@@ -22,6 +23,7 @@ signalr_drain:
             beq connect
             ldy #$01        ; draining
             jsr esp_client_poll
+            lda state
             rts
 connect:    lda #CONNECTING
             sta state
@@ -30,6 +32,7 @@ connect:    lda #CONNECTING
             lda #>on_wifi_started
             sta ok_call + 2
             jsr esp_client_start_wifi
+            lda state
             rts
 
 signalr_run:
@@ -55,7 +58,8 @@ signalr_run:
             beq ok_call
             jmp on_error
 ok_call:    jsr $0000
-exit:       rts
+exit:       lda state
+            rts
 
 signalr_send:
             jsr esp_client_ws_send
@@ -78,7 +82,9 @@ on_wifi_started:
             lda #>host
             sta $fc
             ldx #29    ; host arg length
-            jmp esp_client_start_ws
+            jsr esp_client_start_ws
+            lda state
+            rts
 
 on_ws_connected:
             lda #<on_handshake_sent
@@ -90,7 +96,9 @@ on_ws_connected:
             lda #>handshake
             sta $fc
             ldx #39    ; payload length
-            jmp esp_client_ws_send
+            jsr esp_client_ws_send
+            lda state
+            rts
 
 on_handshake_sent:
             rts
@@ -104,7 +112,8 @@ on_data:
             cmp #$01            ; Message Type - invocation, ignore anything else (not expected)
             bne :+
             ldy #RESULT_DATA    ; invocation request
-:           rts
+:           lda state
+            rts
 
 handle_handshake:
             lda data_buff + 1
