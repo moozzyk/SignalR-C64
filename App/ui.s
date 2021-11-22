@@ -1,4 +1,4 @@
-.export ui_init_name_prompt, ui_init_chat_window, ui_show_connecting, print_message
+.export ui_init_name_prompt, ui_init_chat_window, ui_show_connecting, ui_animate_connecting, print_message
 .export toggle_cursor, handle_key_press, clear_message
 
 BACKGROUND_COLOR=0
@@ -27,18 +27,52 @@ ui_init_name_prompt:
 name_label:
             .byte "name: ", $00
 
+CONNECTING_LABEL_START_POS = $577
+
 ui_show_connecting:
             jsr ui_reset_screen
+            lda $d018
+            and #%11111100
+            ora #$01
+            sta $d018
+            sec
             ldx #$00
 :           lda connecting_label,x
             beq :+
-            sta $575,x
+            sbc #$40
+            sta CONNECTING_LABEL_START_POS,x
             inx
             bne :-
 :           rts
 
 connecting_label:
-            .byte "connecting...", $00
+            .byte "connecting", $00
+
+ui_animate_connecting:
+            dec wave_timer
+            beq :+
+            rts
+:           lda #$03
+            sta wave_timer
+            lda wave
+            ldx #$00
+:           sta CONNECTING_LABEL_START_POS + 2 * 40,x
+            inx
+            cpx #$0a
+            bne :-
+            tay
+            ldx #$00
+:           lda wave + 1,x
+            beq :+
+            sta wave,x
+            inx
+            jmp :-
+:           tya
+            sta wave,x
+            rts
+
+wave:       .byte $77, $45, $44, $43, $46, $52, $6f, $52, $46, $43, $44, $45, $00
+wave_timer: .byte 1
 
 ui_init_chat_window:
             jsr ui_reset_screen
@@ -65,9 +99,9 @@ ui_init_chat_window:
             rts
 
 set_colors:
-            lda #BACKGROUND_COLOR
-            sta $d020
             lda #BORDER_COLOR
+            sta $d020
+            lda #BACKGROUND_COLOR
             sta $d021
             rts
 

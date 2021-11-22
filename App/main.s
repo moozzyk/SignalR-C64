@@ -1,6 +1,6 @@
 .import signalr_init, signalr_run, signalr_send
 .import data_buff
-.import ui_init_name_prompt, ui_show_connecting, ui_init_chat_window
+.import ui_init_name_prompt, ui_show_connecting, ui_init_chat_window, ui_animate_connecting
 .import print_message, toggle_cursor, handle_key_press, clear_message
 .import keyboard_open, keyboard_read
 
@@ -43,22 +43,20 @@ main:
             cli
             jmp *
 irq:
-            lda #$01
-            sta $d020
             lda mode
-            beq :+          ; mode MODE_DISCONNECTED
+            beq read_keys   ; mode MODE_DISCONNECTED
             jsr poll_signalr
             cmp #$02        ; Client status: CONNECTED
-            bne :++
-            lda mode
+            beq :+          ; if not assume: CONNECTING
+            jsr ui_animate_connecting
+            jmp exit
+:           lda mode
             cmp #MODE_CONNECTING
-            bne :+
+            bne read_keys
             inc mode
             jsr ui_init_chat_window
-:           jsr poll_keyboard
-:           lda #$00
-            sta $d020
-            lda #$01
+read_keys:  jsr poll_keyboard
+exit:       lda #$01
             sta $d019
             jmp $ea31
 
