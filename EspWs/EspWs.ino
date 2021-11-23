@@ -126,8 +126,7 @@ void wsStart(const String& url) {
 
   int hostIndex = 0;
   if (url.startsWith("wss://")) {
-    reportError("Secure WebSocket not supported");
-    return;
+    hostIndex = 6;
   }
   if (url.startsWith("ws://")) {
     hostIndex = 5;
@@ -146,7 +145,11 @@ void wsStart(const String& url) {
   path = url.substring(pathIndex);
 
   webSocket.onEvent(webSocketEvent);
-  webSocket.begin(host, port.toInt(), path);
+  if (url.startsWith("wss://")) {
+    webSocket.beginSSL(host.c_str(), port.toInt(), path.c_str());
+  } else {
+    webSocket.begin(host, port.toInt(), path);
+  }
 }
 
 void wsSend(const char* message, unsigned int len) {
