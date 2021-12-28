@@ -1,6 +1,6 @@
 SOURCES = main.s rs-232.s signalr-client.s esp-client.s ui.s keyboard.s
 ASCIIRES = signalr-client-strings.s
-PROGRAM = app.prg
+PROGRAM = signalrdemo.prg
 
 CA    = ca65
 CC    = cl65
@@ -16,4 +16,7 @@ $(PROGRAM): $(SOURCES) $(ASCIIRES:.s=.o)
 	$(CC) $(FLAGS) -o $@ $(SOURCES) $(ASCIIRES:.s=.o)
 
 clean:
-	$(RM) $(PROGRAM) $(PROGRAM).map $(PROGRAM).lbl $(SOURCES:.s=.o) $(ASCIIRES:.s=.o)
+	$(RM) $(PROGRAM) $(PROGRAM).map $(PROGRAM).lbl $(SOURCES:.s=.o) $(ASCIIRES:.s=.o) $(PROGRAM).d64
+
+d64:
+	c1541 -format "azure demo,00" d64 $(PROGRAM).d64 -write $(PROGRAM) "signalr demo"
