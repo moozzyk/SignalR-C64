@@ -1,6 +1,6 @@
 # Cloud (Azure) enabled Commodore 64
 
-Commodore 64 comminicating with a variety of clients over Azure using a SignalR client written in 6502 assembly. 
+Commodore 64 communicating with a variety of clients over Azure using a SignalR client written in 6502 assembly. 
 
 ## Live Demo
 
