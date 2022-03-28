@@ -3,7 +3,7 @@
 #include <ESP8266WiFi.h>
 #include <WebSocketsClient.h>
 
-#define BAUD_RATE 1200
+#define BAUD_RATE 600
 
 #define MODE_ACCEPT_COMMAND 1
 #define MODE_EXECUTE_COMMAND 2

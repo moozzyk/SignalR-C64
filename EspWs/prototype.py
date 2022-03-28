@@ -44,7 +44,7 @@ def send_receive(s, cmd_id, args):
 
 
 def main():
-    s = serial.Serial('/dev/cu.usbserial-1420', 1200)
+    s = serial.Serial('/dev/cu.usbserial-1420', 600)
     send_receive(s, COMMAND_START_WIFI, "")
     send_receive(s, COMMAND_START_WEBSOCKET, "ws://192.168.86.250:5000/chat")
     send(s, COMMAND_WEBSOCKET_SEND,

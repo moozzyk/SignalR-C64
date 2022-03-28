@@ -18,7 +18,7 @@ serial_open:
             jsr $ffc9       ; CHKOUT
             rts
 
-bauds:      .byte 8         ; 1200 bauds
+bauds:      .byte 7         ; 600 bauds
 
 serial_read:
             ldx #file_id

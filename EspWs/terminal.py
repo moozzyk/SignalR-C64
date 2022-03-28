@@ -67,7 +67,7 @@ def write_and_wait(s, command):
 
 
 def main():
-    s = serial.Serial('/dev/cu.usbserial-1420', 1200)
+    s = serial.Serial('/dev/cu.usbserial-1420', 600)
     while True:
         command = input('> ')
         if command == '':
