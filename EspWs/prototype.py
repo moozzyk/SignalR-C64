@@ -1,4 +1,5 @@
 import serial
+import sys
 
 COMMAND_START_WIFI = 3
 COMMAND_START_WEBSOCKET = 5
@@ -44,9 +45,15 @@ def send_receive(s, cmd_id, args):
 
 
 def main():
-    s = serial.Serial('/dev/cu.usbserial-1420', 600)
+    if len(sys.argv) < 3:
+        print('Usage python3 proptotype.py {server} {device} [{bauds}]\nExample: python3 proptotype.py 192.168.86.250:5000 /dev/cu.usbserial-1420')
+        return 1
+    server = sys.argv[1]
+    device = sys.argv[2]
+    bauds = int(sys.argv[3]) if len(sys.argv) > 3 else 600
+    s = serial.Serial(device, bauds)
     send_receive(s, COMMAND_START_WIFI, "")
-    send_receive(s, COMMAND_START_WEBSOCKET, "ws://192.168.86.250:5000/chat")
+    send_receive(s, COMMAND_START_WEBSOCKET, f"ws://{server}/chat")
     send(s, COMMAND_WEBSOCKET_SEND,
          '{"protocol": "messagepack", "version": 1}\x1e')
     while True:
