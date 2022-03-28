@@ -1,5 +1,7 @@
 import serial
 import sys
+import time
+
 
 COMMAND_START_WIFI = 3
 COMMAND_START_WEBSOCKET = 5
@@ -16,6 +18,14 @@ result_code_to_string = {
     RESULT_DATA: "DATA",
     RESULT_WS: "WS",
 }
+
+
+def drain(s):
+    for _ in range(20):
+        if s.inWaiting():
+            s.read()
+        else:
+            time.sleep(0.05)
 
 
 def serialize_command(cmd_id, args):
@@ -52,6 +62,7 @@ def main():
     device = sys.argv[2]
     bauds = int(sys.argv[3]) if len(sys.argv) > 3 else 600
     s = serial.Serial(device, bauds)
+    drain(s)
     send_receive(s, COMMAND_START_WIFI, "")
     send_receive(s, COMMAND_START_WEBSOCKET, f"ws://{server}/chat")
     send(s, COMMAND_WEBSOCKET_SEND,

@@ -1,4 +1,5 @@
 import serial
+import time
 
 COMMAND_SET_SSID = 1
 COMMAND_SET_PASS = 2
@@ -21,12 +22,21 @@ RESULT_ERROR = 2
 RESULT_DATA = 3
 RESULT_WS = 4
 
+
 result_code_to_string = {
     RESULT_OK: "OK",
     RESULT_ERROR: "ERROR",
     RESULT_DATA: "DATA",
     RESULT_WS: "WS",
 }
+
+
+def drain(s):
+    for _ in range(20):
+        if s.inWaiting():
+            s.read()
+        else:
+            time.sleep(0.05)
 
 
 def parse_command(command):
@@ -68,6 +78,7 @@ def write_and_wait(s, command):
 
 def main():
     s = serial.Serial('/dev/cu.usbserial-1420', 600)
+    drain(s)
     while True:
         command = input('> ')
         if command == '':
