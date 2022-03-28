@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AspNetCoreHostingModel>OutOfProcess</AspNetCoreHostingModel>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="5.0.6" />
+  </ItemGroup>
+
+  <Target Name="CopyClient" BeforeTargets="AfterBuild">
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)node_modules\@microsoft\signalr\dist\browser\signalr.js" DestinationFolder="$(MSBuildThisFileDirectory)wwwroot\js" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)node_modules\@microsoft\signalr-protocol-msgpack\dist\browser\signalr-protocol-msgpack.js" DestinationFolder="$(MSBuildThisFileDirectory)wwwroot\js" />
+    <ItemGroup>
+    	<MsgPackFiles Include="$(MSBuildThisFileDirectory)node_modules\@msgpack\msgpack\dist\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(MsgPackFiles)" DestinationFolder="$(MSBuildThisFileDirectory)wwwroot\js" />
+  </Target>
+</Project>

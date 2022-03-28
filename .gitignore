@@ -4,3 +4,7 @@
 *.o
 *.d64
 .DS_Store
+TestServer/bin
+TestServer/obj
+TestServer/wwwroot/js
+TestServer/node_modules
