@@ -81,8 +81,12 @@ on_wifi_started:
             sta $fb
             lda #>host
             sta $fc
-            ldx #29    ; host arg length
-            jsr esp_client_start_ws
+            ldx #$00
+:           lda host,x
+            beq :+
+            inx
+            bne :-
+:           jsr esp_client_start_ws
             lda state
             rts
 
